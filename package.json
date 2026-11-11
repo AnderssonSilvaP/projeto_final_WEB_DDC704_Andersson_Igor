@@ -1,0 +1,30 @@
+{
+  "name": "odontochess-fullstack",
+  "version": "1.0.0",
+  "description": "OdontoChess • Sistema Odontológico Completo Full Stack inspirado no Chess.com (UFRR)",
+  "main": "start-dev.js",
+  "scripts": {
+    "start": "node start-dev.js",
+    "dev": "node start-dev.js",
+    "start:backend": "cd server && npm start",
+    "start:frontend": "cd client && npm run dev",
+    "dev:backend": "cd server && npm run dev",
+    "dev:frontend": "cd client && npm run dev",
+    "install:all": "cd server && npm install && cd ../client && npm install",
+    "build": "cd client && npm run build",
+    "seed": "cd server && npm run seed"
+  },
+  "keywords": [
+    "odontologia",
+    "odontograma",
+    "chess",
+    "fullstack",
+    "react",
+    "nodejs",
+    "express",
+    "mongodb",
+    "ufrr"
+  ],
+  "author": "",
+  "license": "ISC"
+}

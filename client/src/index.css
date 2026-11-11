@@ -1,0 +1,220 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Dark Mode Default (Chess.com Classic Dark) */
+  --bg-app: #262522;
+  --bg-darker: #1e1e1b;
+  --bg-darkest: #161512;
+  --bg-panel: #312e2b;
+  --bg-card: #272522;
+  --bg-hover: #383531;
+  --border-color: #3d3a34;
+  --border-light: #4a4640;
+  --text-primary: #ffffff;
+  --text-secondary: #989795;
+  --text-body: #e0dedb;
+
+  /* Classic Theme Default */
+  --accent-primary: #81b64c;
+  --accent-hover: #95c85d;
+  --accent-shadow: #45752b;
+  --accent-light: rgba(129, 182, 76, 0.15);
+}
+
+/* Light Mode Overrides */
+[data-mode="light"] {
+  --bg-app: #f4f5f8;
+  --bg-darker: #ffffff;
+  --bg-darkest: #e2e8f0;
+  --bg-panel: #ffffff;
+  --bg-card: #f8fafc;
+  --bg-hover: #edf2f7;
+  --border-color: #e2e8f0;
+  --border-light: #cbd5e1;
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --text-body: #1e293b;
+
+  /* Classic in Light Mode */
+  --accent-primary: #5d9948;
+  --accent-hover: #6ea959;
+  --accent-shadow: #3f6e30;
+  --accent-light: rgba(93, 153, 72, 0.12);
+}
+
+/* Palette Themes */
+[data-theme="classic"] {
+  --accent-primary: #81b64c;
+  --accent-hover: #95c85d;
+  --accent-shadow: #45752b;
+  --accent-light: rgba(129, 182, 76, 0.15);
+}
+[data-mode="light"][data-theme="classic"] {
+  --accent-primary: #5d9948;
+  --accent-hover: #6ea959;
+  --accent-shadow: #3f6e30;
+  --accent-light: rgba(93, 153, 72, 0.12);
+}
+
+[data-theme="wood"] {
+  --accent-primary: #b45309;
+  --accent-hover: #d97706;
+  --accent-shadow: #78350f;
+  --accent-light: rgba(180, 83, 9, 0.15);
+}
+[data-mode="light"][data-theme="wood"] {
+  --accent-primary: #b45309;
+  --accent-hover: #c2410c;
+  --accent-shadow: #78350f;
+  --accent-light: rgba(180, 83, 9, 0.12);
+}
+
+[data-theme="marble"] {
+  --accent-primary: #0284c7;
+  --accent-hover: #0ea5e9;
+  --accent-shadow: #0369a1;
+  --accent-light: rgba(2, 132, 199, 0.15);
+}
+[data-mode="light"][data-theme="marble"] {
+  --accent-primary: #0284c7;
+  --accent-hover: #0369a1;
+  --accent-shadow: #075985;
+  --accent-light: rgba(2, 132, 199, 0.12);
+}
+
+[data-theme="sapphire"] {
+  --accent-primary: #4f46e5;
+  --accent-hover: #6366f1;
+  --accent-shadow: #3730a3;
+  --accent-light: rgba(79, 70, 229, 0.15);
+}
+[data-mode="light"][data-theme="sapphire"] {
+  --accent-primary: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-shadow: #3730a3;
+  --accent-light: rgba(79, 70, 229, 0.12);
+}
+
+[data-theme="mint"] {
+  --accent-primary: #059669;
+  --accent-hover: #10b981;
+  --accent-shadow: #047857;
+  --accent-light: rgba(5, 150, 105, 0.15);
+}
+[data-mode="light"][data-theme="mint"] {
+  --accent-primary: #059669;
+  --accent-hover: #047857;
+  --accent-shadow: #065f46;
+  --accent-light: rgba(5, 150, 105, 0.12);
+}
+
+@layer base {
+  body {
+    background-color: var(--bg-app);
+    color: var(--text-body);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+}
+
+/* Custom Chess Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-darker);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-light);
+}
+
+/* Chess-style 3D Button Utility */
+.chess-btn-green {
+  background-color: var(--accent-primary) !important;
+  color: #ffffff !important;
+  font-weight: 700;
+  box-shadow: 0 4px 0 var(--accent-shadow);
+  transition: all 0.1s ease;
+}
+.chess-btn-green:hover {
+  background-color: var(--accent-hover) !important;
+}
+.chess-btn-green:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 var(--accent-shadow);
+}
+
+.chess-btn-dark {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+  font-weight: 600;
+  box-shadow: 0 4px 0 var(--border-color);
+  transition: all 0.1s ease;
+}
+.chess-btn-dark:hover {
+  background-color: var(--border-color);
+  color: var(--text-primary);
+}
+.chess-btn-dark:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 var(--border-color);
+}
+
+.chess-btn-gold {
+  background-color: #e5b338;
+  color: #1e1e1b !important;
+  font-weight: 800;
+  box-shadow: 0 4px 0 #a37f20;
+  transition: all 0.1s ease;
+}
+.chess-btn-gold:hover {
+  background-color: #f0c34e;
+}
+.chess-btn-gold:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #a37f20;
+}
+
+/* In light mode, ensure text-white in headers/labels adapts to dark text */
+[data-mode="light"] .text-white {
+  color: var(--text-primary) !important;
+}
+
+[data-mode="light"] h1,
+[data-mode="light"] h2,
+[data-mode="light"] h3,
+[data-mode="light"] h4 {
+  color: var(--text-primary) !important;
+}
+
+[data-mode="light"] .chess-btn-green,
+[data-mode="light"] .chess-btn-green *,
+[data-mode="light"] .bg-chess-green,
+[data-mode="light"] .bg-chess-green *,
+[data-mode="light"] .keep-white,
+[data-mode="light"] .keep-white *,
+[data-mode="light"] [data-keep-white],
+[data-mode="light"] [data-keep-white] * {
+  color: #ffffff !important;
+}
+
+/* Print styling */
+@media print {
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+}

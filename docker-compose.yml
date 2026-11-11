@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  # ========================================================
+  # 1. Banco de Dados NoSQL MongoDB 7.0
+  # ========================================================
+  mongodb:
+    image: mongo:7.0
+    container_name: odontochess_db
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: odontochess
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - odontochess_net
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ========================================================
+  # 2. Backend API RESTful (Node.js 20 + Express + Mongoose)
+  # ========================================================
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: odontochess_server
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - MONGO_URI=mongodb://mongodb:27017/odontochess
+      - JWT_SECRET=odontochess_super_secret_jwt_key_2026_ufrr
+      - NODE_ENV=production
+      - AUTO_SEED=true
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - odontochess_net
+
+  # ========================================================
+  # 3. Frontend Web SPA (React 18 + Vite + Tailwind + Nginx)
+  # ========================================================
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: odontochess_client
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - server
+    networks:
+      - odontochess_net
+
+networks:
+  odontochess_net:
+    driver: bridge
+
+volumes:
+  mongo_data:
+    driver: local
