@@ -12,12 +12,12 @@ export const THEMES = [
 
 export const ThemeProvider = ({ children }) => {
   const [mode, setMode] = useState(() => {
-    const saved = localStorage.getItem('odontochess_mode');
+    const saved = localStorage.getItem('odontocheck_mode');
     return saved || 'dark';
   });
 
   const [theme, setTheme] = useState(() => {
-    const saved = localStorage.getItem('odontochess_theme');
+    const saved = localStorage.getItem('odontocheck_theme');
     return saved || 'classic';
   });
 
@@ -25,8 +25,8 @@ export const ThemeProvider = ({ children }) => {
     const root = document.documentElement;
     root.setAttribute('data-mode', mode);
     root.setAttribute('data-theme', theme);
-    localStorage.setItem('odontochess_mode', mode);
-    localStorage.setItem('odontochess_theme', theme);
+    localStorage.setItem('odontocheck_mode', mode);
+    localStorage.setItem('odontocheck_theme', theme);
 
     if (mode === 'light') {
       root.classList.remove('dark');

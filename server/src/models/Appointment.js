@@ -15,19 +15,22 @@ const appointmentSchema = new mongoose.Schema(
     chairNumber: {
       type: Number,
       enum: [1, 2, 3],
-      default: 1, // 1: Cadeira Titânio (Cirurgia/Implante), 2: Cadeira Ouro (Ortodontia/Estética), 3: Cadeira Esmeralda (Clínica Geral)
+      default: 1,
     },
     date: {
-      type: String, // Formato YYYY-MM-DD para busca exata e comparativos de agenda
+      type: String,
+      match: [/^\d{4}-\d{2}-\d{2}$/, 'Data deve estar no formato AAAA-MM-DD'],
       required: [true, 'Data é obrigatória'],
     },
     timeSlot: {
-      type: String, // Formato HH:mm
+      type: String,
+      match: [/^([01]\d|2[0-3]):[0-5]\d$/, 'Horário deve estar no formato HH:mm'],
       required: [true, 'Horário é obrigatório'],
     },
     durationMinutes: {
       type: Number,
       default: 45,
+      min: 5,
     },
     procedure: {
       type: String,

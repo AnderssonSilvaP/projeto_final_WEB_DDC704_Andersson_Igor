@@ -11,9 +11,7 @@ import {
   Package,
   Layers,
   LogOut,
-  ShieldCheck,
   Award,
-  ChevronRight,
   Smile,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -34,14 +32,13 @@ const navItems = [
 
 export const Sidebar = () => {
   const { user, logout, quickSwitchRole } = useAuth();
-  const { playMove } = useAudio();
+  const { playClick } = useAudio();
 
   const userRole = user?.role || 'recepcao';
   const filteredNav = navItems.filter((item) => item.roles.includes(userRole));
 
   return (
     <aside className="w-64 bg-chess-darker border-r border-chess-border flex flex-col h-screen sticky top-0 select-none z-30 transition-colors">
-      {/* Brand Header */}
       <div className="p-4 border-b border-chess-border flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-chess-panel border border-chess-border flex items-center justify-center shadow-md">
@@ -60,7 +57,6 @@ export const Sidebar = () => {
         </div>
       </div>
 
-      {/* Navigation Menu */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         <div className="px-3 pb-2 text-[11px] font-bold uppercase tracking-wider text-chess-gray">
           Módulos Clínicos
@@ -71,7 +67,7 @@ export const Sidebar = () => {
             <NavLink
               key={item.path}
               to={item.path}
-              onClick={playMove}
+              onClick={playClick}
               className={({ isActive }) =>
                 `flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-semibold transition-all group ${
                   isActive
@@ -93,7 +89,6 @@ export const Sidebar = () => {
           );
         })}
 
-        {/* Quick Demo Switcher Section */}
         <div className="pt-4 mt-4 border-t border-chess-border">
           <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-chess-gold flex items-center gap-1.5">
             <Award className="w-3.5 h-3.5" />
@@ -101,55 +96,54 @@ export const Sidebar = () => {
           </div>
           <div className="grid grid-cols-2 gap-1.5 px-2">
             <button
-              onClick={() => { playMove(); quickSwitchRole('admin'); }}
+              onClick={() => { playClick(); quickSwitchRole('admin'); }}
               className={`text-xs py-1.5 px-2 rounded font-bold border transition-all text-left ${
                 userRole === 'admin'
                   ? 'bg-chess-gold/20 border-chess-gold text-chess-gold'
                   : 'bg-chess-panel border-chess-border text-chess-gray hover:text-white'
               }`}
             >
-              👑 Diretor (Admin)
+              Diretor (Admin)
             </button>
             <button
-              onClick={() => { playMove(); quickSwitchRole('dentista'); }}
+              onClick={() => { playClick(); quickSwitchRole('dentista'); }}
               className={`text-xs py-1.5 px-2 rounded font-bold border transition-all text-left ${
                 userRole === 'dentista'
                   ? 'bg-chess-green/20 border-chess-green text-chess-green'
                   : 'bg-chess-panel border-chess-border text-chess-gray hover:text-white'
               }`}
             >
-              🦷 Dentista
+              Dentista
             </button>
             <button
-              onClick={() => { playMove(); quickSwitchRole('recepcao'); }}
+              onClick={() => { playClick(); quickSwitchRole('recepcao'); }}
               className={`text-xs py-1.5 px-2 rounded font-bold border transition-all text-left ${
                 userRole === 'recepcao'
                   ? 'bg-chess-blue/20 border-chess-blue text-chess-blue'
                   : 'bg-chess-panel border-chess-border text-chess-gray hover:text-white'
               }`}
             >
-              📋 Recepção
+              Recepção
             </button>
             <button
-              onClick={() => { playMove(); quickSwitchRole('paciente'); }}
+              onClick={() => { playClick(); quickSwitchRole('paciente'); }}
               className={`text-xs py-1.5 px-2 rounded font-bold border transition-all text-left ${
                 userRole === 'paciente'
                   ? 'bg-purple-500/20 border-purple-500 text-purple-400'
                   : 'bg-chess-panel border-chess-border text-chess-gray hover:text-white'
               }`}
             >
-              👤 Paciente
+              Paciente
             </button>
           </div>
         </div>
       </nav>
 
-      {/* User Profile Card */}
       <div className="p-3 border-t border-chess-border bg-chess-dark">
         <div className="bg-chess-panel p-2.5 rounded-lg border border-chess-border flex items-center justify-between">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-9 h-9 rounded-md bg-chess-darker flex items-center justify-center font-bold text-chess-green border border-chess-border flex-shrink-0 text-xs">
-              🦷
+              {(user?.name || 'U').charAt(0)}
             </div>
             <div className="min-w-0">
               <div className="text-xs font-bold text-white truncate flex items-center gap-1">

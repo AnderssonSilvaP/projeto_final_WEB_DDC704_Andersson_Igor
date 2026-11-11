@@ -1,19 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Calendar as CalendarIcon,
-  Clock,
-  User,
   Plus,
   ChevronLeft,
   ChevronRight,
-  Filter,
-  CheckCircle,
   Play,
-  XCircle,
   MessageSquare,
-  DollarSign,
 } from 'lucide-react';
 import { api } from '../services/api';
+import { Spinner } from '../components/Spinner';
 import { Modal } from '../components/Modal';
 import { useAudio } from '../context/AudioContext';
 
@@ -23,15 +17,15 @@ const TIME_SLOTS = [
 ];
 
 export const Agenda = () => {
-  const { playMove, playCapture, playBrilliant } = useAudio();
+  const { playClick, playAlert, playSuccess } = useAudio();
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
-  const [selectedChair, setSelectedChair] = useState('todas'); // 'todas', '1', '2', '3'
+  const [selectedChair, setSelectedChair] = useState('todas');
+
   const [appointments, setAppointments] = useState([]);
   const [patients, setPatients] = useState([]);
   const [dentists, setDentists] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Modal Novo Agendamento
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newPatient, setNewPatient] = useState('');
   const [newDentist, setNewDentist] = useState('');
@@ -41,7 +35,6 @@ export const Agenda = () => {
   const [newPrice, setNewPrice] = useState(180);
   const [newNotes, setNewNotes] = useState('');
 
-  // WhatsApp Reminder Modal
   const [reminderModal, setReminderModal] = useState({ open: false, appointment: null });
 
   const fetchAgenda = async () => {
@@ -75,28 +68,28 @@ export const Agenda = () => {
   }, [selectedDate, selectedChair]);
 
   const handlePrevDay = () => {
-    playMove();
+    playClick();
     const d = new Date(selectedDate);
     d.setDate(d.getDate() - 1);
     setSelectedDate(d.toISOString().split('T')[0]);
   };
 
   const handleNextDay = () => {
-    playMove();
+    playClick();
     const d = new Date(selectedDate);
     d.setDate(d.getDate() + 1);
     setSelectedDate(d.toISOString().split('T')[0]);
   };
 
   const handleToday = () => {
-    playMove();
+    playClick();
     setSelectedDate(new Date().toISOString().split('T')[0]);
   };
 
   const handleCreateAppointment = async (e) => {
     e.preventDefault();
     try {
-      playBrilliant();
+      playSuccess();
       await api.post('/appointments', {
         patient: newPatient,
         dentist: newDentist,
@@ -117,7 +110,7 @@ export const Agenda = () => {
 
   const handleStatusUpdate = async (aptId, newStatus) => {
     try {
-      playCapture();
+      playAlert();
       await api.patch(`/appointments/${aptId}/status`, { status: newStatus });
       fetchAgenda();
     } catch (err) {
@@ -131,11 +124,11 @@ export const Agenda = () => {
     );
   };
 
+  if (loading) return <Spinner />;
+
   return (
     <div className="space-y-6">
-      {/* Top Controls: Data e Filtros de Cadeira */}
       <div className="bg-chess-panel border border-chess-border rounded-2xl p-5 shadow-chess-card flex flex-col md:flex-row items-center justify-between gap-4">
-        {/* Date Selector */}
         <div className="flex items-center gap-3">
           <button
             onClick={handlePrevDay}
@@ -169,7 +162,6 @@ export const Agenda = () => {
           </button>
         </div>
 
-        {/* Chair Filter */}
         <div className="flex items-center gap-2 bg-chess-darker p-1 rounded-xl border border-chess-border">
           {[
             { id: 'todas', label: 'Todas as Cadeiras' },
@@ -179,7 +171,7 @@ export const Agenda = () => {
           ].map((c) => (
             <button
               key={c.id}
-              onClick={() => { playMove(); setSelectedChair(c.id); }}
+              onClick={() => { playClick(); setSelectedChair(c.id); }}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 selectedChair === c.id
                   ? 'bg-chess-green text-white shadow-chess-btn'
@@ -191,9 +183,8 @@ export const Agenda = () => {
           ))}
         </div>
 
-        {/* Botão Novo Agendamento */}
         <button
-          onClick={() => { playMove(); setIsModalOpen(true); }}
+          onClick={() => { playClick(); setIsModalOpen(true); }}
           className="px-4 py-2 rounded-xl text-xs font-black chess-btn-green flex items-center gap-2"
         >
           <Plus className="w-4 h-4" />
@@ -201,7 +192,6 @@ export const Agenda = () => {
         </button>
       </div>
 
-      {/* Grid Multi-Consultórios (Cadeiras 1, 2 e 3) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[1, 2, 3]
           .filter((chairNum) => selectedChair === 'todas' || selectedChair === String(chairNum))
@@ -223,7 +213,6 @@ export const Agenda = () => {
                   <p className="text-xs text-chess-gray">{chairInfo.spec}</p>
                 </div>
 
-                {/* Slots da Cadeira */}
                 <div className="space-y-3 flex-1">
                   {TIME_SLOTS.map((time) => {
                     const apt = getAppointmentsForSlot(chairNum, time);
@@ -281,9 +270,7 @@ export const Agenda = () => {
                           {apt.procedure}
                         </div>
 
-                        {/* Ações Táticas da Consulta */}
                         <div className="pt-2 border-t border-chess-border/40 flex items-center justify-between gap-1">
-                          {/* Lembrete WhatsApp */}
                           <button
                             onClick={() => setReminderModal({ open: true, appointment: apt })}
                             title="Enviar lembrete de consulta WhatsApp"
@@ -337,7 +324,6 @@ export const Agenda = () => {
           })}
       </div>
 
-      {/* Modal Novo Agendamento */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -461,7 +447,6 @@ export const Agenda = () => {
         </form>
       </Modal>
 
-      {/* Modal WhatsApp Reminder */}
       <Modal
         isOpen={reminderModal.open}
         onClose={() => setReminderModal({ open: false, appointment: null })}
@@ -472,13 +457,13 @@ export const Agenda = () => {
           <div className="space-y-4">
             <div className="p-4 bg-chess-darker border border-chess-border rounded-xl text-xs space-y-2 font-mono text-chess-light">
               <p>
-                🦷 Olá <strong>{reminderModal.appointment.patient?.name}</strong>!
+                Olá <strong>{reminderModal.appointment.patient?.name}</strong>!
               </p>
               <p>
                 Lembramos da sua consulta na <strong>Clínica Odontológica</strong> marcada para:
               </p>
               <p className="text-chess-gold font-bold">
-                📅 Data: {reminderModal.appointment.date} às {reminderModal.appointment.timeSlot}
+                Data: {reminderModal.appointment.date} às {reminderModal.appointment.timeSlot}
               </p>
               <p>
                 Procedimento: {reminderModal.appointment.procedure} com Dr(a). {reminderModal.appointment.dentist?.name}.
@@ -490,7 +475,7 @@ export const Agenda = () => {
 
             <button
               onClick={() => {
-                playBrilliant();
+                playSuccess();
                 alert('Mensagem de lembrete enviada via WhatsApp com sucesso!');
                 setReminderModal({ open: false, appointment: null });
               }}

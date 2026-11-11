@@ -1,8 +1,33 @@
 const Odontogram = require('../models/Odontogram');
 const Patient = require('../models/Patient');
 const TreatmentPlan = require('../models/TreatmentPlan');
+const { checkId, sendNotFound, sendBadRequest } = require('./shared');
 
-// Helper para recalcular métricas e score tático de saúde bucal (0 a 100)
+const PATIENT_NOT_FOUND = 'Paciente não encontrado';
+const ODONTOGRAM_NOT_FOUND = 'Odontograma não encontrado';
+const PATIENT_FIELDS = 'name cpf birthDate eloScore';
+const BILLABLE_CONDITIONS = ['carie', 'canal', 'coroa', 'implante', 'extracao', 'tartaro'];
+const DISCOUNT_PERCENTAGE = 5;
+const CONDITIONS = Odontogram.schema.path('teeth').schema.path('generalCondition').enumValues;
+
+const PROCEDURE_CATALOG = {
+  carie: { name: 'Restauração Resina Fotopolimerizável', price: 180, category: 'Dentística' },
+  canal: { name: 'Tratamento Endodôntico (Canal)', price: 650, category: 'Endodontia' },
+  coroa: { name: 'Coroa Cerâmica Metal-Free / Zircônia', price: 1200, category: 'Prótese' },
+  implante: { name: 'Implante Dentário Cone Morse + Cicatrizador', price: 2200, category: 'Implantodontia' },
+  extracao: { name: 'Exodontia Simples / Dente Retido', price: 250, category: 'Cirurgia' },
+  tartaro: { name: 'Raspagem Subgengival e Profilaxia', price: 160, category: 'Periodontia' },
+};
+
+const DEFAULT_SURFACES = () => ({
+  vestibular: { condition: 'higido' },
+  lingual: { condition: 'higido' },
+  mesial: { condition: 'higido' },
+  distal: { condition: 'higido' },
+  oclusal: { condition: 'higido' },
+});
+
+// Penalty-based oral health score (0-100): untreated problems lower it.
 const recalculateOdontogramStats = (odontogram) => {
   let caries = 0;
   let restorations = 0;
@@ -10,18 +35,17 @@ const recalculateOdontogramStats = (odontogram) => {
   let implants = 0;
   let missing = 0;
 
-  odontogram.teeth.forEach((t) => {
-    if (t.generalCondition === 'carie') caries++;
-    else if (t.generalCondition === 'restauracao') restorations++;
-    else if (t.generalCondition === 'canal') rootCanals++;
-    else if (t.generalCondition === 'implante') implants++;
-    else if (t.generalCondition === 'ausente' || t.generalCondition === 'extracao') missing++;
+  odontogram.teeth.forEach((tooth) => {
+    const condition = tooth.generalCondition;
+    if (condition === 'carie') caries++;
+    else if (condition === 'restauracao') restorations++;
+    else if (condition === 'canal') rootCanals++;
+    else if (condition === 'implante') implants++;
+    else if (condition === 'ausente' || condition === 'extracao') missing++;
 
-    // Verifica superfícies
-    const surf = t.surfaces;
-    if (surf) {
-      Object.values(surf).forEach((s) => {
-        if (s && s.condition === 'carie' && t.generalCondition !== 'carie') caries++;
+    if (tooth.surfaces && condition !== 'carie') {
+      Object.values(tooth.surfaces).forEach((surface) => {
+        if (surface && surface.condition === 'carie') caries++;
       });
     }
   });
@@ -34,116 +58,86 @@ const recalculateOdontogramStats = (odontogram) => {
     missingCount: missing,
   };
 
-  // Cálculo de pontuação de saúde bucal (estilo avaliação de xadrez)
-  // Partindo de 100%, subtrai pontos por problemas não tratados
   const penalty = caries * 10 + rootCanals * 5 + missing * 4;
   odontogram.generalHealthScore = Math.max(10, Math.min(100, 100 - penalty));
 };
 
-// @desc    Obter odontograma completo do paciente
-// @route   GET /api/odontogram/patient/:patientId
-// @access  Private
+const defaultTactics = (condition) => {
+  if (condition === 'carie') return 'blunder';
+  if (condition === 'implante') return 'brilliant';
+  return 'best';
+};
+
 const getOdontogramByPatient = async (req, res, next) => {
   try {
-    let odontogram = await Odontogram.findOne({ patient: req.params.patientId })
-      .populate('patient', 'name cpf birthDate eloScore')
-      .populate('dentist', 'name specialty cro');
+    const { patientId } = req.params;
+    if (!checkId(res, patientId, PATIENT_NOT_FOUND)) return;
 
-    // Se ainda não existir para este paciente, inicializa automaticamente
+    let odontogram = await Odontogram.findOne({ patient: patientId });
+
     if (!odontogram) {
-      const allTeeth = [];
-      // 32 permanentes
-      const adult = [
-        18, 17, 16, 15, 14, 13, 12, 11,
-        21, 22, 23, 24, 25, 26, 27, 28,
-        48, 47, 46, 45, 44, 43, 42, 41,
-        31, 32, 33, 34, 35, 36, 37, 38
-      ];
-      adult.forEach((num) => {
-        allTeeth.push({
-          toothNumber: num,
-          generalCondition: 'higido',
-          surfaces: {
-            vestibular: { condition: 'higido' },
-            lingual: { condition: 'higido' },
-            mesial: { condition: 'higido' },
-            distal: { condition: 'higido' },
-            oclusal: { condition: 'higido' },
-          },
-          chessTactics: 'best',
-          status: 'higido',
-        });
-      });
+      if (!(await Patient.exists({ _id: patientId }))) return sendNotFound(res, PATIENT_NOT_FOUND);
 
       odontogram = await Odontogram.create({
-        patient: req.params.patientId,
+        patient: patientId,
         dentist: req.user._id,
         archType: 'adulto',
-        teeth: allTeeth,
+        teeth: Odontogram.buildAdultTeeth(),
         generalHealthScore: 95,
       });
-
-      odontogram = await Odontogram.findById(odontogram._id)
-        .populate('patient', 'name cpf birthDate eloScore')
-        .populate('dentist', 'name specialty cro');
     }
 
-    res.json({
-      success: true,
-      odontogram,
-    });
+    odontogram = await Odontogram.findById(odontogram._id)
+      .populate('patient', PATIENT_FIELDS)
+      .populate('dentist', 'name specialty cro');
+
+    res.json({ success: true, odontogram });
   } catch (error) {
     next(error);
   }
 };
 
-// @desc    Atualizar um dente específico no odontograma
-// @route   PUT /api/odontogram/patient/:patientId/tooth/:toothNumber
-// @access  Private
 const updateTooth = async (req, res, next) => {
   try {
     const { patientId, toothNumber } = req.params;
-    const { generalCondition, surfaces, chessTactics, notes, procedureName, price, status } = req.body;
+    if (!checkId(res, patientId, PATIENT_NOT_FOUND)) return;
 
-    let odontogram = await Odontogram.findOne({ patient: patientId });
-    if (!odontogram) {
-      return res.status(404).json({ success: false, message: 'Odontograma não encontrado' });
+    const number = Number(toothNumber);
+    if (!Number.isInteger(number) || number < 11 || number > 85) {
+      return sendBadRequest(res, 'Número do dente inválido.');
     }
 
-    const toothIndex = odontogram.teeth.findIndex((t) => t.toothNumber === Number(toothNumber));
+    const { generalCondition = 'higido', surfaces, chessTactics, notes, procedureName, price, status } = req.body;
+    if (!CONDITIONS.includes(generalCondition)) {
+      return sendBadRequest(res, 'Condição do dente inválida.');
+    }
 
-    const updatedData = {
-      toothNumber: Number(toothNumber),
-      generalCondition: generalCondition || 'higido',
-      surfaces: surfaces || {
-        vestibular: { condition: 'higido' },
-        lingual: { condition: 'higido' },
-        mesial: { condition: 'higido' },
-        distal: { condition: 'higido' },
-        oclusal: { condition: 'higido' },
-      },
-      chessTactics: chessTactics || (generalCondition === 'carie' ? 'blunder' : generalCondition === 'implante' ? 'brilliant' : 'best'),
+    const odontogram = await Odontogram.findOne({ patient: patientId });
+    if (!odontogram) return sendNotFound(res, ODONTOGRAM_NOT_FOUND);
+
+    const updated = {
+      toothNumber: number,
+      generalCondition,
+      surfaces: surfaces || DEFAULT_SURFACES(),
+      chessTactics: chessTactics || defaultTactics(generalCondition),
       notes: notes || '',
       procedureName: procedureName || '',
-      price: price || 0,
+      price: Number(price) || 0,
       status: status || (generalCondition === 'higido' ? 'higido' : 'necessita_tratamento'),
       lastUpdated: new Date(),
     };
 
-    if (toothIndex > -1) {
-      odontogram.teeth[toothIndex] = updatedData;
-    } else {
-      odontogram.teeth.push(updatedData);
-    }
+    const index = odontogram.teeth.findIndex((t) => t.toothNumber === number);
+    if (index > -1) odontogram.teeth[index] = updated;
+    else odontogram.teeth.push(updated);
 
     odontogram.dentist = req.user._id;
     recalculateOdontogramStats(odontogram);
-
     await odontogram.save();
 
     res.json({
       success: true,
-      message: `Dente #${toothNumber} atualizado no tabuleiro tático.`,
+      message: `Dente #${number} atualizado no odontograma.`,
       odontogram,
     });
   } catch (error) {
@@ -151,69 +145,53 @@ const updateTooth = async (req, res, next) => {
   }
 };
 
-// @desc    Gerar orçamento automático a partir dos dentes que necessitam tratamento no odontograma
-// @route   POST /api/odontogram/patient/:patientId/generate-budget
-// @access  Private
 const generateTreatmentPlanFromOdontogram = async (req, res, next) => {
   try {
-    const odontogram = await Odontogram.findOne({ patient: req.params.patientId });
-    if (!odontogram) {
-      return res.status(404).json({ success: false, message: 'Odontograma não encontrado' });
-    }
+    const { patientId } = req.params;
+    if (!checkId(res, patientId, PATIENT_NOT_FOUND)) return;
 
-    const procedurePriceMap = {
-      carie: { name: 'Restauração Resina Fotopolimerizável', price: 180, category: 'Dentística' },
-      canal: { name: 'Tratamento Endodôntico (Canal)', price: 650, category: 'Endodontia' },
-      coroa: { name: 'Coroa Cerâmica Metal-Free / Zircônia', price: 1200, category: 'Prótese' },
-      implante: { name: 'Implante Dentário Cone Morse + Cicatrizador', price: 2200, category: 'Implantodontia' },
-      extracao: { name: 'Exodontia Simples / Dente Retido', price: 250, category: 'Cirurgia' },
-      tartaro: { name: 'Raspagem Subgengival e Profilaxia', price: 160, category: 'Periodontia' },
-      ortodontia: { name: 'Manutenção / Instalação Ortodôntica', price: 200, category: 'Ortodontia' },
-    };
+    const odontogram = await Odontogram.findOne({ patient: patientId });
+    if (!odontogram) return sendNotFound(res, ODONTOGRAM_NOT_FOUND);
 
-    const items = [];
-    let subtotal = 0;
-
-    odontogram.teeth.forEach((t) => {
-      if (['carie', 'canal', 'coroa', 'implante', 'extracao', 'tartaro'].includes(t.generalCondition)) {
-        const proc = procedurePriceMap[t.generalCondition];
-        const price = t.price > 0 ? t.price : proc.price;
-        items.push({
+    const items = odontogram.teeth
+      .filter((t) => BILLABLE_CONDITIONS.includes(t.generalCondition))
+      .map((t) => {
+        const procedure = PROCEDURE_CATALOG[t.generalCondition];
+        const price = t.price > 0 ? t.price : procedure.price;
+        return {
           toothNumber: t.toothNumber,
-          procedureName: `${proc.name} (Dente ${t.toothNumber})`,
-          category: proc.category,
+          procedureName: `${procedure.name} (Dente ${t.toothNumber})`,
+          category: procedure.category,
           unitPrice: price,
           quantity: 1,
           total: price,
           status: 'a_fazer',
-        });
-        subtotal += price;
-      }
-    });
+        };
+      });
 
     if (items.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Todos os dentes estão hígidos! Nenhum procedimento pendente para orçar.',
-      });
+      return sendBadRequest(res, 'Todos os dentes estão hígidos. Nenhum procedimento pendente para orçar.');
     }
 
+    const subtotal = items.reduce((acc, item) => acc + item.total, 0);
+    const discountAmount = (subtotal * DISCOUNT_PERCENTAGE) / 100;
+
     const plan = await TreatmentPlan.create({
-      patient: req.params.patientId,
+      patient: patientId,
       dentist: req.user._id,
-      title: `Plano Tático Odontológico - ${new Date().toLocaleDateString('pt-BR')}`,
+      title: `Plano de Tratamento - ${new Date().toLocaleDateString('pt-BR')}`,
       items,
       subtotal,
-      discountPercentage: 5,
-      discountAmount: (subtotal * 5) / 100,
-      totalAmount: subtotal * 0.95,
+      discountPercentage: DISCOUNT_PERCENTAGE,
+      discountAmount,
+      totalAmount: subtotal - discountAmount,
       status: 'pendente',
-      notes: 'Orçamento gerado diretamente a partir do diagnóstico do Odontograma.',
+      notes: 'Orçamento gerado a partir do diagnóstico do odontograma.',
     });
 
     res.status(201).json({
       success: true,
-      message: 'Plano de tratamento gerado com sucesso!',
+      message: 'Plano de tratamento gerado com sucesso.',
       treatmentPlan: plan,
     });
   } catch (error) {

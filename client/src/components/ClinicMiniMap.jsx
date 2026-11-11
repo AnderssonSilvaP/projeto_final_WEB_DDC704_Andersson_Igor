@@ -3,13 +3,7 @@ import {
   MapPin,
   Users,
   Clock,
-  Activity,
-  Sparkles,
   Info,
-  CheckCircle,
-  Coffee,
-  Shield,
-  Zap,
 } from 'lucide-react';
 import { useAudio } from '../context/AudioContext';
 
@@ -20,7 +14,7 @@ export const ClinicMiniMap = ({
   chair3Occupied = false,
   highlightChair = null,
 }) => {
-  const { playMove } = useAudio();
+  const { playClick } = useAudio();
   const [selectedRoom, setSelectedRoom] = useState('recepcao');
 
   const rooms = {
@@ -81,7 +75,6 @@ export const ClinicMiniMap = ({
 
   return (
     <div className="bg-chess-panel border border-chess-border rounded-3xl p-6 shadow-2xl space-y-5">
-      {/* Header do Mini Mapa */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-chess-border">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl bg-chess-darker border border-chess-border text-chess-green">
@@ -98,7 +91,6 @@ export const ClinicMiniMap = ({
           </div>
         </div>
 
-        {/* Resumo da Clínica */}
         <div className="flex items-center gap-3 bg-chess-darker px-3 py-1.5 rounded-xl border border-chess-border text-xs">
           <div className="flex items-center gap-1.5 font-bold text-white">
             <Users className="w-3.5 h-3.5 text-chess-gold" />
@@ -112,9 +104,7 @@ export const ClinicMiniMap = ({
         </div>
       </div>
 
-      {/* Grid Arquitetônico 2D da Clínica */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
-        {/* Planta Baixa Interativa */}
         <div className="md:col-span-8 bg-chess-darker p-4 rounded-2xl border border-chess-border relative overflow-hidden">
           <div className="text-[10px] uppercase font-bold text-chess-gray tracking-wider mb-3 flex items-center justify-between">
             <span>Planta da Clínica • OdontoCheck Prime</span>
@@ -122,9 +112,8 @@ export const ClinicMiniMap = ({
           </div>
 
           <div className="grid grid-cols-6 gap-2.5 min-h-[280px]">
-            {/* Recepção & Lounge (3 colunas, 3 linhas) */}
             <div
-              onClick={() => { playMove(); setSelectedRoom('recepcao'); }}
+              onClick={() => { playClick(); setSelectedRoom('recepcao'); }}
               className={`col-span-3 row-span-2 p-3.5 rounded-xl border cursor-pointer transition-all flex flex-col justify-between ${
                 selectedRoom === 'recepcao'
                   ? 'bg-chess-panel border-chess-gold ring-2 ring-chess-gold/50 shadow-lg'
@@ -136,10 +125,8 @@ export const ClinicMiniMap = ({
                   <span className="text-[10px] font-black uppercase text-chess-gold">Entrada</span>
                   <div className="text-xs font-black text-white">Recepção & Lounge</div>
                 </div>
-                <span className="text-lg">🛋️</span>
               </div>
 
-              {/* Pacientes Sentados (Avatares animados) */}
               <div className="py-2">
                 <div className="text-[11px] text-chess-gray mb-1">Sala de Espera:</div>
                 <div className="flex items-center gap-1.5 flex-wrap">
@@ -149,7 +136,6 @@ export const ClinicMiniMap = ({
                       className="w-7 h-7 rounded-lg bg-chess-panel border border-chess-border flex items-center justify-center text-xs relative"
                       title={`Paciente #${i + 1} aguardando`}
                     >
-                      <span>👤</span>
                       <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-chess-gold animate-pulse" />
                     </div>
                   ))}
@@ -161,9 +147,8 @@ export const ClinicMiniMap = ({
               </div>
             </div>
 
-            {/* Consultório 1 (Cirurgia) */}
             <div
-              onClick={() => { playMove(); setSelectedRoom('c1'); }}
+              onClick={() => { playClick(); setSelectedRoom('c1'); }}
               className={`col-span-3 p-3 rounded-xl border cursor-pointer transition-all flex flex-col justify-between ${
                 selectedRoom === 'c1' || highlightChair === 1
                   ? 'bg-chess-panel border-chess-green ring-2 ring-chess-green/50 shadow-lg'
@@ -176,7 +161,6 @@ export const ClinicMiniMap = ({
                   <div className="text-xs font-black text-white">Cirurgia & Implantes</div>
                   <span className="text-[10px] text-chess-gray">Dr. Roberto Silveira</span>
                 </div>
-                <span className="text-lg">🩺</span>
               </div>
               <div className="flex items-center justify-between text-[10px] font-bold pt-1">
                 <span className={chair1Occupied ? 'text-chess-red' : 'text-chess-green'}>
@@ -186,9 +170,8 @@ export const ClinicMiniMap = ({
               </div>
             </div>
 
-            {/* Consultório 2 (Ortodontia) */}
             <div
-              onClick={() => { playMove(); setSelectedRoom('c2'); }}
+              onClick={() => { playClick(); setSelectedRoom('c2'); }}
               className={`col-span-3 p-3 rounded-xl border cursor-pointer transition-all flex flex-col justify-between ${
                 selectedRoom === 'c2' || highlightChair === 2
                   ? 'bg-chess-panel border-chess-blue ring-2 ring-chess-blue/50 shadow-lg'
@@ -201,7 +184,6 @@ export const ClinicMiniMap = ({
                   <div className="text-xs font-black text-white">Ortodontia 3D</div>
                   <span className="text-[10px] text-chess-gray">Dra. Mariana Costa</span>
                 </div>
-                <span className="text-lg">🦷</span>
               </div>
               <div className="flex items-center justify-between text-[10px] font-bold pt-1">
                 <span className={chair2Occupied ? 'text-chess-red' : 'text-chess-green'}>
@@ -211,9 +193,8 @@ export const ClinicMiniMap = ({
               </div>
             </div>
 
-            {/* Consultório 3 (Clínica Geral) */}
             <div
-              onClick={() => { playMove(); setSelectedRoom('c3'); }}
+              onClick={() => { playClick(); setSelectedRoom('c3'); }}
               className={`col-span-2 p-3 rounded-xl border cursor-pointer transition-all flex flex-col justify-between ${
                 selectedRoom === 'c3' || highlightChair === 3
                   ? 'bg-chess-panel border-chess-green ring-2 ring-chess-green/50 shadow-lg'
@@ -225,16 +206,14 @@ export const ClinicMiniMap = ({
                   <span className="text-[10px] font-bold text-chess-green">Cadeira #3</span>
                   <div className="text-xs font-black text-white">Clínica Geral</div>
                 </div>
-                <span className="text-base">🪥</span>
               </div>
               <div className="text-[10px] font-bold text-chess-green">
                 {chair3Occupied ? '● Ocupado' : '○ Livre Agora'}
               </div>
             </div>
 
-            {/* Raio-X & Tomografia 3D */}
             <div
-              onClick={() => { playMove(); setSelectedRoom('raioX'); }}
+              onClick={() => { playClick(); setSelectedRoom('raioX'); }}
               className={`col-span-2 p-3 rounded-xl border cursor-pointer transition-all flex flex-col justify-between ${
                 selectedRoom === 'raioX'
                   ? 'bg-chess-panel border-purple-500 ring-2 ring-purple-500/50 shadow-lg'
@@ -246,14 +225,12 @@ export const ClinicMiniMap = ({
                   <span className="text-[10px] font-bold text-purple-400">Diagnóstico</span>
                   <div className="text-xs font-black text-white">Tomografia 3D</div>
                 </div>
-                <span className="text-base">🔬</span>
               </div>
               <div className="text-[10px] font-bold text-purple-400">Cone Beam HD</div>
             </div>
 
-            {/* Esterilização & Biossegurança */}
             <div
-              onClick={() => { playMove(); setSelectedRoom('esterilizacao'); }}
+              onClick={() => { playClick(); setSelectedRoom('esterilizacao'); }}
               className={`col-span-2 p-3 rounded-xl border cursor-pointer transition-all flex flex-col justify-between ${
                 selectedRoom === 'esterilizacao'
                   ? 'bg-chess-panel border-cyan-500 ring-2 ring-cyan-500/50 shadow-lg'
@@ -265,14 +242,12 @@ export const ClinicMiniMap = ({
                   <span className="text-[10px] font-bold text-cyan-400">Biossegurança</span>
                   <div className="text-xs font-black text-white">Esterilização</div>
                 </div>
-                <span className="text-base">🧼</span>
               </div>
               <div className="text-[10px] font-bold text-cyan-400">100% Estéril</div>
             </div>
           </div>
         </div>
 
-        {/* Detalhes da Sala Selecionada */}
         <div className="md:col-span-4 bg-chess-darker p-5 rounded-2xl border border-chess-border flex flex-col justify-between space-y-4">
           <div>
             <div className="flex items-center justify-between pb-2 border-b border-chess-border">

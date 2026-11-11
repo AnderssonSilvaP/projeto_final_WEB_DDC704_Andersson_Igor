@@ -1,5 +1,4 @@
 const express = require('express');
-const router = express.Router();
 const {
   getAppointments,
   getTodayAppointments,
@@ -8,9 +7,11 @@ const {
   updateAppointment,
   deleteAppointment,
 } = require('../controllers/appointmentController');
-const { protect } = require('../middleware/authMiddleware');
+const { protect, authorize } = require('../middleware/authMiddleware');
 
-router.use(protect);
+const router = express.Router();
+
+router.use(protect, authorize('admin', 'dentista', 'recepcao'));
 
 router.get('/today', getTodayAppointments);
 
@@ -22,6 +23,6 @@ router.patch('/:id/status', updateStatus);
 
 router.route('/:id')
   .put(updateAppointment)
-  .delete(deleteAppointment);
+  .delete(authorize('admin'), deleteAppointment);
 
 module.exports = router;

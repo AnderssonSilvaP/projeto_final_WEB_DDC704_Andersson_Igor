@@ -5,12 +5,8 @@ import {
   Users,
   Clock,
   MapPin,
-  Calendar,
   CheckCircle2,
-  AlertTriangle,
-  Heart,
   Phone,
-  Shield,
   Zap,
   Activity,
   ArrowRight,
@@ -18,18 +14,10 @@ import {
   Moon,
   Palette,
   Check,
-  Volume2,
-  VolumeX,
   Stethoscope,
-  Smile,
-  Layers,
-  Award,
   ChevronRight,
   Star,
   Camera,
-  Search,
-  MessageSquare,
-  FileText,
   Lock,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -39,7 +27,6 @@ import { InteractiveReception } from '../components/InteractiveReception';
 import { ClinicMiniMap } from '../components/ClinicMiniMap';
 import { api } from '../services/api';
 
-// Dados dos Médicos da Clínica
 const DOCTORS = [
   {
     id: 'roberto',
@@ -49,7 +36,6 @@ const DOCTORS = [
     specialties: ['Implantodontia', 'Carga Imediata', 'Cirurgia Guiada 3D'],
     experience: '18 anos de experiência',
     education: 'Mestrado em Implantodontia pela USP • Especialista em Reconstrução Óssea',
-    avatar: '👨‍⚕️',
     rating: 4.98,
     reviews: 540,
     chair: 'Cadeira 1 (Titânio)',
@@ -64,7 +50,6 @@ const DOCTORS = [
     specialties: ['Alinhadores Invisíveis', 'Invisalign Top Doctor', 'Harmonização'],
     experience: '12 anos de experiência',
     education: 'Especialização em Ortodontia Digital • Certificação Platinum Invisalign',
-    avatar: '👩‍⚕️',
     rating: 4.96,
     reviews: 620,
     chair: 'Cadeira 2 (Ouro)',
@@ -79,7 +64,6 @@ const DOCTORS = [
     specialties: ['Tratamento de Canal em Sessão Única', 'Microscopia Operatória'],
     experience: '14 anos de experiência',
     education: 'Especialista em Endodontia Avançada • Membro da Sociedade Brasileira de Endodontia',
-    avatar: '👨‍🔬',
     rating: 4.95,
     reviews: 380,
     chair: 'Cadeira 1 (Titânio) / Cadeira 3',
@@ -94,7 +78,6 @@ const DOCTORS = [
     specialties: ['Odontopediatria', 'Periodontia Clínica', 'Sedação com Óxido Nitroso'],
     experience: '9 anos de experiência',
     education: 'Residência em Odontopediatria e Manejo Comportamental Lúdico',
-    avatar: '👩‍⚕️',
     rating: 4.99,
     reviews: 490,
     chair: 'Cadeira 3 (Esmeralda)',
@@ -103,13 +86,11 @@ const DOCTORS = [
   },
 ];
 
-// Dados dos Exames de Diagnóstico
 const DIAGNOSTIC_EXAMS = [
   {
     id: 'tomografia',
     title: 'Tomografia Computadorizada Cone Beam 3D',
     category: 'Diagnóstico Tridimensional',
-    icon: '🔬',
     description: 'Imagens volumétricas tridimensionais de altíssima definição milimétrica para planejamento cirúrgico de implantes, sisos e patologias com 80% menos radiação.',
     indications: ['Planejamento de Implantes', 'Sisos Inclusos próximos ao Nervo', 'Endodontia Avançada', 'Lesões Ósseas'],
     timeMinutes: 5,
@@ -120,7 +101,6 @@ const DIAGNOSTIC_EXAMS = [
     id: 'scanner',
     title: 'Escaneamento Intraoral 3D Colorido',
     category: 'Odontologia Digital',
-    icon: '✨',
     description: 'Scanner digital de última geração que substitui de forma definitiva a desconfortável massa de moldagem (alginato). Captura a arcada em cores reais em 3 minutos.',
     indications: ['Alinhadores Invisíveis', 'Facetas e Lentes de Porcelana', 'Coroas Cerâmicas', 'Acompanhamento de Desgastes'],
     timeMinutes: 8,
@@ -131,7 +111,6 @@ const DIAGNOSTIC_EXAMS = [
     id: 'panoramica',
     title: 'Radiografia Panorâmica Digital HD',
     category: 'Radiografia Digital',
-    icon: '📸',
     description: 'Exame panorâmico completo dos maxilares, dentes, seios maxilares e articulações temporomandibulares em uma única tomada rápida de 12 segundos.',
     indications: ['Avaliação Inicial Completa', 'Pesquisa de Focos de Infecção', 'Ortodontia', 'Avaliação Óssea Geral'],
     timeMinutes: 3,
@@ -142,7 +121,6 @@ const DIAGNOSTIC_EXAMS = [
     id: 'camera',
     title: 'Check-up Preventivo com Câmera Intraoral HD',
     category: 'Prevenção & Detecção Precoce',
-    icon: '🔍',
     description: 'Micro-câmera com aumento de até 60x que projeta em tela de alta resolução lesões iniciais de cárie, microfraturas e restaurações infiltradas invisíveis a olho nu.',
     indications: ['Prevenção Periódica', 'Detecção Precoce de Trincas', 'Acompanhamento Visual pelo Paciente'],
     timeMinutes: 10,
@@ -151,12 +129,10 @@ const DIAGNOSTIC_EXAMS = [
   },
 ];
 
-// Dados das Cirurgias e Procedimentos Especializados
 const SURGERIES = [
   {
     id: 'implantes',
     name: 'Implantes Dentários com Carga Imediata',
-    icon: '🔩',
     badge: 'Dente no Mesmo Dia',
     description: 'Reposição fixa e definitiva de um ou mais dentes perdidos com fixação em titânio ou cerâmica pura. Em casos selecionados, o dente provisório fixo é instalado em até 24-48h.',
     recovery: 'Recuperação confortável em 2 a 3 dias com protocolo analgésico preventivo.',
@@ -165,7 +141,6 @@ const SURGERIES = [
   {
     id: 'sisos',
     name: 'Extração Cirúrgica de Sisos Inclusos',
-    icon: '🦷',
     badge: 'Atraumática & Segura',
     description: 'Remoção planejada com precisão milimétrica via tomografia 3D, preservando o nervo alveolar inferior e as estruturas nobres. Procedimento rápido com sedação consciente opcional.',
     recovery: 'Edema mínimo e volta às atividades leves em 48 horas.',
@@ -174,7 +149,6 @@ const SURGERIES = [
   {
     id: 'enxerto',
     name: 'Enxertos Ósseos & Levantamento de Seio Maxilar',
-    icon: '🧬',
     badge: 'Bioengenharia Tecidual',
     description: 'Regeneração do volume ósseo reabsorvido utilizando biomateriais biocompatíveis importados e membranas de colágeno, preparando a base para instalação de implantes estáveis.',
     recovery: 'Procedimento ambulatorial sob anestesia local computadorizada indolor.',
@@ -183,7 +157,6 @@ const SURGERIES = [
   {
     id: 'alinhadores',
     name: 'Ortodontia Digital com Alinhadores Invisíveis',
-    icon: '💎',
     badge: 'Estética & Conforto',
     description: 'Alinhamento completo dos dentes através de placas plásticas transparentes sob medida, trocadas quinzenalmente. Totalmente removíveis para comer e higienizar sem constrangimento.',
     recovery: 'Sem cortes, sem fios metálicos pontiagudos e sem emergências de braquete quebrado.',
@@ -192,7 +165,6 @@ const SURGERIES = [
   {
     id: 'lentes',
     name: 'Lentes de Contato e Facetas em Porcelana Pura',
-    icon: '✨',
     badge: 'Estética de Alta Fidelidade',
     description: 'Lâminas cerâmicas ultrafinas em dissilicato de lítio (E-Max) cimentadas sobre o esmalte, corrigindo cor, formato, fechando diastemas e harmonizando o sorriso com durabilidade de décadas.',
     recovery: 'Mínimo ou nenhum desgaste da estrutura sadia do dente.',
@@ -201,7 +173,6 @@ const SURGERIES = [
   {
     id: 'canal',
     name: 'Endodontia Mecanizada em Sessão Única',
-    icon: '🟣',
     badge: 'Tratamento sem Dor',
     description: 'Tratamento de canal rápido com limas rotatórias de níquel-titânio e localizador foraminal eletrônico. Elimina a infecção e preserva o dente natural sem dor.',
     recovery: 'Alívio imediato da dor pulsátil com pós-operatório tranquilo.',
@@ -210,11 +181,10 @@ const SURGERIES = [
 ];
 
 export const PortalPaciente = () => {
-  const { user, isAuthenticated } = useAuth();
-  const { playMove, playBrilliant, playNotification } = useAudio();
+  const { isAuthenticated } = useAuth();
+  const { playClick, playSuccess } = useAudio();
   const { isDark, toggleMode, theme, selectTheme, themes } = useTheme();
 
-  // Dropdown de Temas
   const [themeDropdownOpen, setThemeDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -228,15 +198,10 @@ export const PortalPaciente = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Estados da Fila e Check-in
   const [waitingCount, setWaitingCount] = useState(3);
   const [currentTicket, setCurrentTicket] = useState('A-102');
-  const [nextTicket, setNextTicket] = useState('A-103');
-  const [activeTab, setActiveTab] = useState('apresentacao');
-  const [checkinSuccessData, setCheckinSuccessData] = useState(null);
-  const [showReceptionModal, setShowReceptionModal] = useState(false);
+  const nextTicket = 'A-103';
 
-  // Carregar status da fila ao vivo do backend
   useEffect(() => {
     const fetchQueueStatus = async () => {
       try {
@@ -250,7 +215,6 @@ export const PortalPaciente = () => {
           }
         }
       } catch (err) {
-        // Fallback gracioso com valores padrão realistas
       }
     };
     fetchQueueStatus();
@@ -259,11 +223,11 @@ export const PortalPaciente = () => {
   const handleCheckinFinished = (result) => {
     setCheckinSuccessData(result);
     setWaitingCount((prev) => prev + 1);
-    playBrilliant();
+    playSuccess();
   };
 
   const scrollToSection = (id) => {
-    playMove();
+    playClick();
     const elem = document.getElementById(id);
     if (elem) {
       elem.scrollIntoView({ behavior: 'smooth' });
@@ -272,7 +236,6 @@ export const PortalPaciente = () => {
 
   return (
     <div className="min-h-screen bg-chess-dark text-white selection:bg-chess-green selection:text-white transition-colors">
-      {/* Top Bar Institucional / Emergência */}
       <div className="bg-chess-darker border-b border-chess-border py-2 px-4 text-xs font-semibold text-chess-gray flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-4 flex-wrap">
           <span className="flex items-center gap-1.5 text-chess-green font-bold">
@@ -295,12 +258,10 @@ export const PortalPaciente = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Theme & Mode Switcher */}
           <div className="flex items-center gap-1.5">
-            {/* Botão Modo Claro / Escuro */}
             <button
               onClick={() => {
-                playMove();
+                playClick();
                 toggleMode();
               }}
               title={isDark ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'}
@@ -319,11 +280,10 @@ export const PortalPaciente = () => {
               )}
             </button>
 
-            {/* Dropdown de Temas */}
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => {
-                  playMove();
+                  playClick();
                   setThemeDropdownOpen((prev) => !prev);
                 }}
                 title="Escolher Tema Visual da Clínica"
@@ -349,7 +309,7 @@ export const PortalPaciente = () => {
                         <button
                           key={t.id}
                           onClick={() => {
-                            playMove();
+                            playClick();
                             selectTheme(t.id);
                             setThemeDropdownOpen(false);
                           }}
@@ -376,7 +336,6 @@ export const PortalPaciente = () => {
             </div>
           </div>
 
-          {/* Botão de Acesso do Profissional / Login */}
           {isAuthenticated ? (
             <Link
               to="/dashboard"
@@ -397,7 +356,6 @@ export const PortalPaciente = () => {
         </div>
       </div>
 
-      {/* Main Navbar */}
       <header className="sticky top-0 z-40 bg-chess-dark/95 backdrop-blur border-b border-chess-border">
         <div className="max-w-7xl mx-auto px-4 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -416,7 +374,6 @@ export const PortalPaciente = () => {
             </div>
           </div>
 
-          {/* Navigation Links */}
           <nav className="hidden md:flex items-center gap-6 text-sm font-bold text-chess-gray">
             <button
               onClick={() => scrollToSection('apresentacao')}
@@ -458,7 +415,6 @@ export const PortalPaciente = () => {
             </button>
           </nav>
 
-          {/* CTA Principal */}
           <button
             onClick={() => scrollToSection('avatar-recepcao')}
             className="chess-btn-green px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold flex items-center gap-2"
@@ -469,13 +425,10 @@ export const PortalPaciente = () => {
         </div>
       </header>
 
-      {/* Hero Section: Apresentação da Clínica & Assistente Sofia */}
       <section id="apresentacao" className="relative overflow-hidden py-10 sm:py-14 border-b border-chess-border">
-        {/* Glow de fundo */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-chess-green/5 rounded-full blur-3xl pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Lado Esquerdo: Identidade, Métricas & Painel da Fila (5 colunas) */}
           <div className="lg:col-span-5 space-y-5">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-chess-panel border border-chess-border text-chess-light text-xs font-semibold">
               <span className="w-2 h-2 rounded-full bg-chess-green animate-ping" />
@@ -490,7 +443,6 @@ export const PortalPaciente = () => {
               Bem-vindo à OdontoCheck. Unimos tomografia Cone Beam 3D, escaneamento intraoral sem massa e cirurgias guiadas por computador para procedimentos rápidos, confortáveis e definitivos.
             </p>
 
-            {/* Painel da Recepção ao Vivo */}
             <div className="bg-chess-darker border border-chess-border rounded-2xl p-4 shadow-chess-card space-y-3.5">
               <div className="flex items-center justify-between border-b border-chess-border pb-2.5">
                 <span className="text-[11px] font-bold text-white flex items-center gap-2">
@@ -502,7 +454,6 @@ export const PortalPaciente = () => {
                 </span>
               </div>
 
-              {/* Senhas */}
               <div className="grid grid-cols-2 gap-2">
                 <div className="bg-chess-panel border border-chess-border rounded-xl p-3 text-center">
                   <span className="text-[10px] text-chess-gray block">Última Chamada</span>
@@ -516,7 +467,6 @@ export const PortalPaciente = () => {
                 </div>
               </div>
 
-              {/* Métricas da Fila */}
               <div className="flex items-center justify-between text-xs px-1 text-chess-gray">
                 <span className="flex items-center gap-1 font-semibold">
                   <Users className="w-3.5 h-3.5 text-chess-blue" />
@@ -529,7 +479,6 @@ export const PortalPaciente = () => {
               </div>
             </div>
 
-            {/* Métricas Clínicas da Instituição */}
             <div className="grid grid-cols-3 gap-2 pt-1">
               <div className="bg-chess-panel border border-chess-border rounded-xl p-2.5 text-center">
                 <div className="text-base font-black text-chess-green font-mono">+12.500</div>
@@ -545,7 +494,6 @@ export const PortalPaciente = () => {
               </div>
             </div>
 
-            {/* Atalhos Rápidos */}
             <div className="flex flex-wrap gap-2 pt-1">
               <button
                 onClick={() => scrollToSection('fila-minimapa')}
@@ -565,14 +513,12 @@ export const PortalPaciente = () => {
             </div>
           </div>
 
-          {/* Lado Direito: Terminal da Assistente Virtual Sofia (7 colunas) */}
           <div className="lg:col-span-7" id="avatar-recepcao">
             <InteractiveReception onCheckinSuccess={handleCheckinFinished} />
           </div>
         </div>
       </section>
 
-      {/* Seção: Mini-Mapa da Clínica & Fila de Atendimento */}
       <section id="fila-minimapa" className="py-16 bg-chess-darker/60 border-b border-chess-border">
         <div className="max-w-7xl mx-auto px-4 space-y-8">
           <div className="max-w-3xl space-y-2">
@@ -587,7 +533,6 @@ export const PortalPaciente = () => {
             </p>
           </div>
 
-          {/* Componente Mini-Mapa da Clínica */}
           <div className="bg-chess-dark border border-chess-border rounded-2xl p-4 sm:p-6 shadow-chess-card">
             <ClinicMiniMap
               waitingCount={waitingCount}
@@ -599,7 +544,6 @@ export const PortalPaciente = () => {
         </div>
       </section>
 
-      {/* Seção: Corpo Clínico & Médicos Especialistas */}
       <section id="medicos" className="py-16 sm:py-20 bg-chess-darker/60 border-b border-chess-border">
         <div className="max-w-7xl mx-auto px-4 space-y-12">
           <div className="text-center max-w-3xl mx-auto space-y-3">
@@ -622,10 +566,9 @@ export const PortalPaciente = () => {
                 className="bg-chess-dark border border-chess-border hover:border-chess-green/70 rounded-2xl p-5 shadow-chess-card transition-all flex flex-col justify-between group"
               >
                 <div className="space-y-4">
-                  {/* Foto / Avatar e CRO */}
                   <div className="flex items-center justify-between">
                     <div className="w-16 h-16 rounded-2xl bg-chess-panel border border-chess-border flex items-center justify-center text-3xl shadow-md group-hover:scale-105 transition-transform">
-                      {doctor.avatar}
+                      {doctor.name.replace(/^Dra?\.\s*/, "").charAt(0)}
                     </div>
                     <div className="text-right">
                       <span className="text-[11px] font-mono font-bold text-chess-gold bg-chess-panel px-2.5 py-1 rounded-full border border-chess-border">
@@ -656,7 +599,6 @@ export const PortalPaciente = () => {
                     <div className="text-chess-gold font-semibold">{doctor.chair}</div>
                   </div>
 
-                  {/* Tags */}
                   <div className="flex flex-wrap gap-1.5">
                     {doctor.tags.map((tag, idx) => (
                       <span
@@ -684,7 +626,6 @@ export const PortalPaciente = () => {
         </div>
       </section>
 
-      {/* Seção: Tipos de Exames & Diagnóstico 3D */}
       <section id="exames" className="py-16 sm:py-20 border-b border-chess-border">
         <div className="max-w-7xl mx-auto px-4 space-y-12">
           <div className="text-center max-w-3xl mx-auto space-y-3">
@@ -710,7 +651,7 @@ export const PortalPaciente = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 rounded-xl bg-chess-panel border border-chess-border flex items-center justify-center text-2xl">
-                        {exam.icon}
+                        <Sparkles size={22} />
                       </div>
                       <div>
                         <span className="text-[10px] font-bold uppercase tracking-wider text-chess-gold">
@@ -728,7 +669,6 @@ export const PortalPaciente = () => {
                     {exam.description}
                   </p>
 
-                  {/* Indicações Clínicas */}
                   <div>
                     <span className="text-[11px] font-bold text-white uppercase tracking-wider block mb-2">
                       Principais Indicações Clínicas:
@@ -744,7 +684,6 @@ export const PortalPaciente = () => {
                   </div>
                 </div>
 
-                {/* Footer do Card com Tempo e Entrega */}
                 <div className="pt-4 mt-4 border-t border-chess-border flex items-center justify-between text-xs text-chess-gray">
                   <span className="flex items-center gap-1 font-mono font-bold text-chess-gold">
                     <Clock className="w-3.5 h-3.5" />
@@ -760,7 +699,6 @@ export const PortalPaciente = () => {
         </div>
       </section>
 
-      {/* Seção: Cirurgias & Procedimentos Avançados */}
       <section id="cirurgias" className="py-16 sm:py-20 bg-chess-darker/60 border-b border-chess-border">
         <div className="max-w-7xl mx-auto px-4 space-y-12">
           <div className="text-center max-w-3xl mx-auto space-y-3">
@@ -785,7 +723,7 @@ export const PortalPaciente = () => {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="w-12 h-12 rounded-xl bg-chess-panel border border-chess-border flex items-center justify-center text-2xl">
-                      {surg.icon}
+                      <Sparkles size={22} />
                     </div>
                     <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-chess-panel border border-chess-border text-chess-gold">
                       {surg.badge}
@@ -827,7 +765,6 @@ export const PortalPaciente = () => {
         </div>
       </section>
 
-      {/* Seção: Depoimentos & Avaliações */}
       <section className="py-16 border-b border-chess-border">
         <div className="max-w-7xl mx-auto px-4 space-y-10">
           <div className="text-center max-w-2xl mx-auto space-y-2">
@@ -903,7 +840,6 @@ export const PortalPaciente = () => {
         </div>
       </section>
 
-      {/* Footer com Endereço, Horários e Plantão */}
       <footer className="bg-chess-darker py-12 border-t border-chess-border text-xs text-chess-gray">
         <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="space-y-3">

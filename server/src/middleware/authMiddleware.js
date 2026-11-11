@@ -1,60 +1,36 @@
-const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { verifyToken } = require('../config/jwt');
 
-const protect = async (req, res, next) => {
-  let token;
+const fail = (res, status, message) => res.status(status).json({ success: false, message });
 
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-    token = req.headers.authorization.split(' ')[1];
-  }
+async function protect(req, res, next) {
+  const header = req.headers.authorization || '';
+  const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+  if (!token) return fail(res, 401, 'Token de autenticação não fornecido.');
 
-  if (!token) {
-    return res.status(401).json({
-      success: false,
-      message: 'Não autorizado: Token de autenticação não fornecido.',
-    });
+  let decoded;
+  try {
+    decoded = verifyToken(token);
+  } catch {
+    return fail(res, 401, 'Token inválido ou expirado.');
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'super_secret_odontochess_grandmaster_token_key_2026');
     const user = await User.findById(decoded.id).select('-password');
-
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'O usuário deste token não existe mais no sistema.',
-      });
-    }
-
-    if (!user.active) {
-      return res.status(403).json({
-        success: false,
-        message: 'Sua conta de usuário está desativada pela administração.',
-      });
-    }
-
+    if (!user) return fail(res, 401, 'Usuário do token não existe mais.');
+    if (!user.active) return fail(res, 403, 'Conta desativada.');
     req.user = user;
     next();
-  } catch (error) {
-    return res.status(401).json({
-      success: false,
-      message: 'Token inválido ou expirado.',
-      error: error.message,
-    });
+  } catch (err) {
+    next(err);
   }
-};
+}
 
-// Controle de Acesso Baseado em Papéis (RBAC - AuthZ)
-const authorize = (...roles) => {
-  return (req, res, next) => {
-    if (!req.user || !roles.includes(req.user.role)) {
-      return res.status(403).json({
-        success: false,
-        message: `Acesso negado: Perfil '${req.user ? req.user.role : 'anônimo'}' não possui permissão tática para executar esta ação. Requer: [${roles.join(', ')}]`,
-      });
-    }
-    next();
-  };
+const authorize = (...roles) => (req, res, next) => {
+  if (!req.user || !roles.includes(req.user.role)) {
+    return fail(res, 403, 'Acesso negado: perfil sem permissão para esta ação.');
+  }
+  next();
 };
 
 module.exports = { protect, authorize };

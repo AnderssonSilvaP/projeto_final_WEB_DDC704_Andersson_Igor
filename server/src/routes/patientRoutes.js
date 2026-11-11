@@ -1,5 +1,4 @@
 const express = require('express');
-const router = express.Router();
 const {
   getPatients,
   getPatientById,
@@ -11,11 +10,13 @@ const {
 } = require('../controllers/patientController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
-// Rotas Públicas da Assistente Virtual Sofia (Chat NLP e Check-in)
+const router = express.Router();
+
+// Public: virtual assistant chat and kiosk check-in.
 router.post('/assistant-chat', assistantChat);
 router.post('/interactive-checkin', interactiveCheckin);
 
-router.use(protect);
+router.use(protect, authorize('admin', 'dentista', 'recepcao'));
 
 router.route('/')
   .get(getPatients)

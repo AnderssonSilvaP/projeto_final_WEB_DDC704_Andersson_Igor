@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Search,
   Volume2,
   VolumeX,
-  Plus,
   Clock,
   Activity,
   UserPlus,
@@ -18,7 +16,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 
 export const Header = ({ onOpenNewPatient, onOpenNewAppointment }) => {
-  const { soundEnabled, toggleSound, playMove } = useAudio();
+  const { soundEnabled, toggleSound, playClick } = useAudio();
   const { user } = useAuth();
   const { mode, isDark, toggleMode, theme, selectTheme, themes } = useTheme();
 
@@ -31,7 +29,6 @@ export const Header = ({ onOpenNewPatient, onOpenNewAppointment }) => {
     return () => clearInterval(timer);
   }, []);
 
-  // Fechar dropdown ao clicar fora
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -56,7 +53,6 @@ export const Header = ({ onOpenNewPatient, onOpenNewAppointment }) => {
 
   return (
     <header className="h-16 bg-chess-dark border-b border-chess-border px-6 flex items-center justify-between sticky top-0 z-20 transition-colors">
-      {/* Left: Chairs Status Indicators */}
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2 text-xs font-semibold text-chess-gray bg-chess-panel px-3 py-1.5 rounded-lg border border-chess-border">
           <Activity className="w-4 h-4 text-chess-green" />
@@ -80,19 +76,16 @@ export const Header = ({ onOpenNewPatient, onOpenNewAppointment }) => {
         </div>
       </div>
 
-      {/* Right Controls: Clock, Theme, Mode, Audio, Actions */}
       <div className="flex items-center gap-2 sm:gap-3">
-        {/* Live Clock */}
         <div className="hidden lg:flex items-center gap-2 text-xs font-bold text-chess-gray bg-chess-panel px-3 py-1.5 rounded-lg border border-chess-border">
           <Clock className="w-3.5 h-3.5 text-chess-gold" />
           <span className="capitalize">{formattedDate}</span>
           <span className="text-chess-light font-mono">{formattedTime}</span>
         </div>
 
-        {/* 1-Click Dark/Light Mode Switcher */}
         <button
           onClick={() => {
-            playMove();
+            playClick();
             toggleMode();
           }}
           title={isDark ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'}
@@ -105,11 +98,10 @@ export const Header = ({ onOpenNewPatient, onOpenNewAppointment }) => {
           )}
         </button>
 
-        {/* Theme Palette Switcher Dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => {
-              playMove();
+              playClick();
               setThemeDropdownOpen((prev) => !prev);
             }}
             title="Escolher Tema Visual"
@@ -132,7 +124,7 @@ export const Header = ({ onOpenNewPatient, onOpenNewAppointment }) => {
                     <button
                       key={t.id}
                       onClick={() => {
-                        playMove();
+                        playClick();
                         selectTheme(t.id);
                         setThemeDropdownOpen(false);
                       }}
@@ -163,7 +155,7 @@ export const Header = ({ onOpenNewPatient, onOpenNewAppointment }) => {
                 <span>Modo de Exibição:</span>
                 <button
                   onClick={() => {
-                    playMove();
+                    playClick();
                     toggleMode();
                   }}
                   className="font-bold text-chess-green hover:underline flex items-center gap-1"
@@ -176,11 +168,10 @@ export const Header = ({ onOpenNewPatient, onOpenNewAppointment }) => {
           )}
         </div>
 
-        {/* Audio Effects Toggle */}
         <button
           onClick={() => {
             toggleSound();
-            playMove();
+            playClick();
           }}
           title={soundEnabled ? 'Silenciar sons táticos' : 'Ativar sons de xadrez'}
           className={`p-2 rounded-lg border transition-all ${
@@ -192,21 +183,18 @@ export const Header = ({ onOpenNewPatient, onOpenNewAppointment }) => {
           {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
         </button>
 
-        {/* Quick Action: Portal do Paciente */}
         <a
           href="/portal"
           title="Abrir Portal do Paciente & Recepção Virtual"
           className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-chess-panel border border-chess-border text-chess-gray hover:text-chess-green hover:border-chess-green transition-all"
         >
-          <span className="text-sm">👩‍⚕️</span>
           <span>Portal & Recepção</span>
         </a>
 
-        {/* Quick Action: Nova Consulta */}
         {user?.role !== 'paciente' && onOpenNewAppointment && (
           <button
             onClick={() => {
-              playMove();
+              playClick();
               onOpenNewAppointment();
             }}
             className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold chess-btn-dark"
@@ -216,11 +204,10 @@ export const Header = ({ onOpenNewPatient, onOpenNewAppointment }) => {
           </button>
         )}
 
-        {/* Quick Action: Novo Paciente */}
         {user?.role !== 'paciente' && onOpenNewPatient && (
           <button
             onClick={() => {
-              playMove();
+              playClick();
               onOpenNewPatient();
             }}
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold chess-btn-green"

@@ -52,7 +52,7 @@ const userSchema = new mongoose.Schema(
     },
     commissionRate: {
       type: Number,
-      default: 50, // % de comissão para dentistas
+      default: 50,
       min: 0,
       max: 100,
     },
@@ -66,7 +66,6 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// Hash de senha pré-save
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
   try {
@@ -78,12 +77,10 @@ userSchema.pre('save', async function (next) {
   }
 });
 
-// Método para comparar senha
 userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Remove senha na serialização JSON
 userSchema.methods.toJSON = function () {
   const user = this.toObject();
   delete user.password;

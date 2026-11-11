@@ -1,5 +1,4 @@
 const express = require('express');
-const router = express.Router();
 const {
   getMedicalRecord,
   updateAnamnese,
@@ -8,15 +7,20 @@ const {
   addCertificate,
   addRadiograph,
 } = require('../controllers/medicalRecordController');
-const { protect } = require('../middleware/authMiddleware');
+const { protect, authorize } = require('../middleware/authMiddleware');
+
+const router = express.Router();
+
+const staff = authorize('admin', 'dentista', 'recepcao');
+const clinician = authorize('admin', 'dentista');
 
 router.use(protect);
 
-router.get('/patient/:patientId', getMedicalRecord);
-router.put('/patient/:patientId/anamnese', updateAnamnese);
-router.post('/patient/:patientId/evolutions', addEvolution);
-router.post('/patient/:patientId/prescriptions', addPrescription);
-router.post('/patient/:patientId/certificates', addCertificate);
-router.post('/patient/:patientId/radiographs', addRadiograph);
+router.get('/patient/:patientId', staff, getMedicalRecord);
+router.put('/patient/:patientId/anamnese', staff, updateAnamnese);
+router.post('/patient/:patientId/evolutions', clinician, addEvolution);
+router.post('/patient/:patientId/prescriptions', clinician, addPrescription);
+router.post('/patient/:patientId/certificates', clinician, addCertificate);
+router.post('/patient/:patientId/radiographs', clinician, addRadiograph);
 
 module.exports = router;

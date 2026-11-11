@@ -1,4 +1,3 @@
-// Web Audio API Synthesizer - Efeitos Sonoros Sutis de Interface Clínica
 let audioCtx = null;
 
 const getAudioContext = () => {
@@ -14,8 +13,7 @@ const getAudioContext = () => {
   return audioCtx;
 };
 
-// Som suave de clique tátil (seleção de dente, navegação)
-export const playMoveSound = () => {
+export const playClickSound = () => {
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
@@ -36,12 +34,10 @@ export const playMoveSound = () => {
     osc.start();
     osc.stop(ctx.currentTime + 0.08);
   } catch (e) {
-    // Audio context may be restricted by browser policy
   }
 };
 
-// Som de captura / confirmação de ação
-export const playCaptureSound = () => {
+export const playAlertSound = () => {
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
@@ -64,8 +60,7 @@ export const playCaptureSound = () => {
   } catch (e) {}
 };
 
-// Som de alerta / Blunder (cárie ou alerta de estoque)
-export const playBlunderSound = () => {
+export const playErrorSound = () => {
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
@@ -88,14 +83,14 @@ export const playBlunderSound = () => {
   } catch (e) {}
 };
 
-// Som Brilhante !! (Procedimento concluído, pagamento recebido)
-export const playBrilliantSound = () => {
+export const playSuccessSound = () => {
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
 
     const now = ctx.currentTime;
-    const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6 arpeggio
+    const notes = [523.25, 659.25, 783.99, 1046.5];
+
 
     notes.forEach((freq, idx) => {
       const osc = ctx.createOscillator();

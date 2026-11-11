@@ -37,10 +37,10 @@ const clinicalEvolutionSchema = new mongoose.Schema(
 
 const prescriptionItemSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true }, // ex: Amoxicilina 500mg
-    dosage: { type: String, required: true }, // ex: 1 cápsula
-    frequency: { type: String, required: true }, // ex: a cada 8 horas
-    duration: { type: String, required: true }, // ex: por 7 dias
+    name: { type: String, required: true },
+    dosage: { type: String, required: true },
+    frequency: { type: String, required: true },
+    duration: { type: String, required: true },
     instructions: { type: String, default: 'Ingerir com água após as refeições.' },
   },
   { _id: false }
@@ -82,7 +82,7 @@ const certificateSchema = new mongoose.Schema(
     },
     cidCode: {
       type: String,
-      default: 'K02.1', // Cárie dentinária
+      default: 'K02.1',
     },
     cidDescription: {
       type: String,

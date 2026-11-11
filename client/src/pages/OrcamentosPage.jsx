@@ -2,26 +2,19 @@ import React, { useState, useEffect } from 'react';
 import {
   Calculator,
   Plus,
-  CheckCircle,
-  XCircle,
   Printer,
-  CreditCard,
-  QrCode,
-  DollarSign,
-  ChevronRight,
-  Sparkles,
 } from 'lucide-react';
 import { api } from '../services/api';
+import { Spinner } from '../components/Spinner';
 import { Modal } from '../components/Modal';
 import { useAudio } from '../context/AudioContext';
 
 export const OrcamentosPage = () => {
-  const { playMove, playCapture, playBrilliant } = useAudio();
+  const { playClick, playSuccess } = useAudio();
   const [plans, setPlans] = useState([]);
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Modal Novo Orçamento
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState('');
   const [planTitle, setPlanTitle] = useState('Plano de Reabilitação Estética e Funcional');
@@ -58,7 +51,7 @@ export const OrcamentosPage = () => {
 
   const handleUpdateStatus = async (planId, newStatus) => {
     try {
-      playBrilliant();
+      playSuccess();
       await api.patch(`/treatment-plans/${planId}/status`, { status: newStatus });
       fetchPlans();
     } catch (err) {
@@ -67,7 +60,7 @@ export const OrcamentosPage = () => {
   };
 
   const handleAddItem = () => {
-    playMove();
+    playClick();
     setItems([
       ...items,
       { toothNumber: 11, procedureName: 'Profilaxia e Aplicação de Flúor', unitPrice: 180, quantity: 1, total: 180 },
@@ -75,7 +68,7 @@ export const OrcamentosPage = () => {
   };
 
   const handleRemoveItem = (index) => {
-    playMove();
+    playClick();
     setItems(items.filter((_, i) => i !== index));
   };
 
@@ -86,7 +79,7 @@ export const OrcamentosPage = () => {
   const handleCreatePlan = async (e) => {
     e.preventDefault();
     try {
-      playBrilliant();
+      playSuccess();
       await api.post('/treatment-plans', {
         patient: selectedPatient,
         title: planTitle,
@@ -103,9 +96,10 @@ export const OrcamentosPage = () => {
     }
   };
 
+  if (loading) return <Spinner />;
+
   return (
     <div className="space-y-6">
-      {/* Top Bar */}
       <div className="bg-chess-panel border border-chess-border rounded-2xl p-5 shadow-chess-card flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl bg-chess-darker border border-chess-border text-chess-gold">
@@ -120,7 +114,7 @@ export const OrcamentosPage = () => {
         </div>
 
         <button
-          onClick={() => { playMove(); setIsModalOpen(true); }}
+          onClick={() => { playClick(); setIsModalOpen(true); }}
           className="px-4 py-2 rounded-xl text-xs font-black chess-btn-green flex items-center gap-2"
         >
           <Plus className="w-4 h-4" />
@@ -128,7 +122,6 @@ export const OrcamentosPage = () => {
         </button>
       </div>
 
-      {/* Grid de Orçamentos */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {plans.map((plan) => {
           const statusColors = {
@@ -165,7 +158,6 @@ export const OrcamentosPage = () => {
                   </span>
                 </div>
 
-                {/* Itens do Plano */}
                 <div className="py-3 space-y-2 border-b border-chess-border/60">
                   {plan.items?.map((it, idx) => (
                     <div key={idx} className="flex items-center justify-between text-xs">
@@ -184,7 +176,6 @@ export const OrcamentosPage = () => {
                   ))}
                 </div>
 
-                {/* Totais e Condições */}
                 <div className="pt-2 flex items-center justify-between text-xs">
                   <div className="text-chess-gray">
                     Condição: <strong className="text-white uppercase">{plan.paymentMethod}</strong>
@@ -203,7 +194,6 @@ export const OrcamentosPage = () => {
                 </div>
               </div>
 
-              {/* Botões de Ação */}
               <div className="pt-3 border-t border-chess-border flex items-center justify-between">
                 <button
                   onClick={() => window.print()}
@@ -253,7 +243,6 @@ export const OrcamentosPage = () => {
         })}
       </div>
 
-      {/* Modal Criar Orçamento */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -288,7 +277,6 @@ export const OrcamentosPage = () => {
             </div>
           </div>
 
-          {/* Itens do Orçamento */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase text-chess-gray">Procedimentos Inclusos:</span>
@@ -348,7 +336,6 @@ export const OrcamentosPage = () => {
             ))}
           </div>
 
-          {/* Desconto e Pagamento */}
           <div className="grid grid-cols-3 gap-3 pt-2 border-t border-chess-border">
             <div>
               <label className="block text-xs font-bold text-chess-gray uppercase mb-1">Desconto (%):</label>
@@ -388,7 +375,6 @@ export const OrcamentosPage = () => {
             </div>
           </div>
 
-          {/* Totalizador */}
           <div className="p-4 bg-chess-darker rounded-xl border border-chess-border flex items-center justify-between">
             <span className="text-sm font-bold text-chess-gray">Valor Total Final:</span>
             <span className="text-xl font-black text-chess-green font-mono">

@@ -1,7 +1,7 @@
 const BASE_URL = '/api';
 
 const request = async (endpoint, options = {}) => {
-  const token = localStorage.getItem('odontochess_token');
+  const token = localStorage.getItem('odontocheck_token');
 
   const headers = {
     'Content-Type': 'application/json',

@@ -6,12 +6,9 @@ import {
   MicOff,
   Volume2,
   VolumeX,
-  CheckCircle2,
   AlertTriangle,
-  Clock,
   User,
   Heart,
-  Pill,
   Smile,
   ShieldAlert,
   ArrowRight,
@@ -25,12 +22,12 @@ import { api } from '../services/api';
 import { useAudio } from '../context/AudioContext';
 
 const COMPLAINT_OPTIONS = [
-  { id: 'dor', label: 'Dor de Dente ou Sensibilidade Aguda', icon: '⚡' },
-  { id: 'limpeza', label: 'Limpeza / Profilaxia de Rotina', icon: '✨' },
-  { id: 'implante', label: 'Avaliação para Implante Dentário', icon: '🔩' },
-  { id: 'aparelho', label: 'Ortodontia / Alinhadores Invisíveis', icon: '🦷' },
-  { id: 'clareamento', label: 'Clareamento & Estética Dental', icon: '💎' },
-  { id: 'canal', label: 'Tratamento de Canal em Sessão Única', icon: '🟣' },
+  { id: 'dor', label: 'Dor de Dente ou Sensibilidade Aguda' },
+  { id: 'limpeza', label: 'Limpeza / Profilaxia de Rotina' },
+  { id: 'implante', label: 'Avaliação para Implante Dentário' },
+  { id: 'aparelho', label: 'Ortodontia / Alinhadores Invisíveis' },
+  { id: 'clareamento', label: 'Clareamento & Estética Dental' },
+  { id: 'canal', label: 'Tratamento de Canal em Sessão Única' },
 ];
 
 const ALLERGY_OPTIONS = [
@@ -53,15 +50,14 @@ const MEDICAL_HISTORY_OPTIONS = [
 ];
 
 export const InteractiveReception = ({ onCheckinSuccess }) => {
-  const { playMove, playCapture, playBrilliant, playBlunder } = useAudio();
+  const { playClick, playAlert, playSuccess } = useAudio();
 
-  // Modos de Interação: 'chat' (Conversa Livre com IA) ou 'stepper' (Triagem Passo a Passo)
   const [interactionMode, setInteractionMode] = useState('chat');
-  const [avatarState, setAvatarState] = useState('idle'); // 'idle' | 'listening' | 'thinking' | 'speaking' | 'empathetic' | 'celebrating'
+  const [avatarState, setAvatarState] = useState('idle');
+
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [isListening, setIsListening] = useState(false);
 
-  // Estado do Diálogo Conversacional (Chat)
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -80,7 +76,6 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const chatBottomRef = useRef(null);
 
-  // Estado da Ficha Clínica Extraída pela Sofia (Anamnese em Tempo Real)
   const [clinicalData, setClinicalData] = useState({
     name: '',
     phone: '',
@@ -88,20 +83,18 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
     allergies: [],
     chronicConditions: [],
     medications: '',
-    urgencyLevel: 'normal', // 'normal' | 'alta'
+    urgencyLevel: 'normal',
+
   });
 
-  // Estado da Triagem Passo a Passo (Stepper)
   const [step, setStep] = useState(1);
   const [checkinResult, setCheckinResult] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Scroll automático no chat
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isProcessing]);
 
-  // Síntese de Voz (Text-to-Speech)
   const speak = (text) => {
     if (!voiceEnabled || typeof window === 'undefined' || !window.speechSynthesis) return;
     try {
@@ -122,7 +115,6 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
     }
   };
 
-  // Reconhecimento de Fala (Web Speech API)
   const startVoiceRecognition = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -139,7 +131,7 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
       recognition.onstart = () => {
         setIsListening(true);
         setAvatarState('listening');
-        playMove();
+        playClick();
       };
 
       recognition.onresult = (event) => {
@@ -165,13 +157,12 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
     }
   };
 
-  // Processador Conversacional Natural (Dual Engine: Backend API + Fallback Local de Alta Precisão)
   const handleSendMessage = async (textToSend) => {
     const text = (typeof textToSend === 'string' ? textToSend : inputText).trim();
     if (!text || isProcessing) return;
 
     setInputText('');
-    playCapture();
+    playAlert();
 
     const userMessage = {
       id: Date.now(),
@@ -185,7 +176,6 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
     setAvatarState('thinking');
 
     try {
-      // 1. Tenta resposta inteligente do backend
       let responseData = null;
       try {
         const res = await api.post('/patients/assistant-chat', {
@@ -195,14 +185,12 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
         });
         responseData = res;
       } catch (err) {
-        // Fallback local se a API estiver indisponível
         responseData = processLocalNLP(text, clinicalData);
       }
 
       if (responseData) {
         const { reply, extractedData, suggestions, readyForCheckin, avatarEmotion } = responseData;
 
-        // Atualiza Anamnese em Tempo Real
         if (extractedData) {
           setClinicalData((prev) => ({
             ...prev,
@@ -230,7 +218,7 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
         speak(reply);
 
         if (readyForCheckin) {
-          playBrilliant();
+          playSuccess();
         }
       }
     } catch (error) {
@@ -251,7 +239,6 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
     }
   };
 
-  // Motor Local de Processamento de Linguagem Natural (Fallback inteligente)
   const processLocalNLP = (input, currentCtx) => {
     const clean = input.toLowerCase();
     const extracted = { ...currentCtx };
@@ -260,7 +247,6 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
     let readyForCheckin = false;
     let avatarEmotion = 'speaking';
 
-    // Detecção de Nome
     const nameMatch = input.match(/(?:meu nome é|me chamo|sou o|sou a)\s+([A-Za-zÀ-ÖØ-öø-ÿ]+(?:\s+[A-Za-zÀ-ÖØ-öø-ÿ]+)?)/i);
     if (nameMatch) {
       const candidate = nameMatch[1].trim();
@@ -268,7 +254,6 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
       if (cleanCandidate.length >= 2) extracted.name = cleanCandidate;
     }
 
-    // Detecção de Dor / Urgência
     if (clean.includes('dor') || clean.includes('inchado') || clean.includes('sangrando') || clean.includes('quebrou')) {
       extracted.complaint = extracted.complaint || 'Dor Aguda / Urgência Dentária';
       extracted.urgencyLevel = 'alta';
@@ -281,13 +266,11 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
       extracted.complaint = 'Limpeza e Profilaxia de Rotina';
     }
 
-    // Detecção de Alergias
     if (clean.includes('penicilina')) extracted.allergies = Array.from(new Set([...extracted.allergies, 'Penicilina']));
     if (clean.includes('dipirona')) extracted.allergies = Array.from(new Set([...extracted.allergies, 'Dipirona']));
     if (clean.includes('anti-inflamatório') || clean.includes('ibuprofeno')) extracted.allergies = Array.from(new Set([...extracted.allergies, 'Anti-inflamatórios (AINEs)']));
     if (clean.includes('anestesia') || clean.includes('anestésico')) extracted.allergies = Array.from(new Set([...extracted.allergies, 'Anestésico Odontológico']));
 
-    // Respostas
     if (clean.includes('horário') || clean.includes('funciona')) {
       reply = 'Nosso atendimento é de Segunda a Sexta das 07:30 às 19:30 e Sábados das 08:00 às 13:00. Temos também plantão 24h para emergências!';
       suggestions = ['Fazer meu check-in', 'Onde fica a clínica?'];
@@ -310,10 +293,9 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
     return { reply, extractedData: extracted, suggestions, readyForCheckin, avatarEmotion };
   };
 
-  // Ação de Finalizar Check-in Oficial e Inserir na Fila
   const handleFinalizeCheckin = async () => {
     setIsSubmitting(true);
-    playCapture();
+    playAlert();
 
     const nameToUse = clinicalData.name.trim() || 'Paciente Recepção Virtual';
     const phoneToUse = clinicalData.phone.trim() || '(95) 99123-4567';
@@ -331,7 +313,7 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
       });
 
       setCheckinResult(res);
-      playBrilliant();
+      playSuccess();
       setAvatarState('celebrating');
 
       confetti({
@@ -344,7 +326,6 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
 
       if (onCheckinSuccess) onCheckinSuccess(res);
     } catch (err) {
-      // Fallback seguro de demonstração para garantir fluidez
       const fallbackRes = {
         queuePosition: 3,
         estimatedWaitMinutes: 25,
@@ -352,7 +333,7 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
         appointment: { timeSlot: 'Agora', status: 'aguardando' },
       };
       setCheckinResult(fallbackRes);
-      playBrilliant();
+      playSuccess();
       setAvatarState('celebrating');
 
       confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
@@ -364,9 +345,8 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
     }
   };
 
-  // Resetar Atendimento
   const handleReset = () => {
-    playMove();
+    playClick();
     setCheckinResult(null);
     setClinicalData({
       name: '',
@@ -392,9 +372,7 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
 
   return (
     <div className="bg-chess-panel border border-chess-border rounded-2xl shadow-2xl overflow-hidden transition-all text-chess-light">
-      {/* Barra de Status do Concierge Virtual */}
       <div className="bg-chess-darker px-5 py-4 border-b border-chess-border flex flex-wrap items-center justify-between gap-3">
-        {/* Avatar Expressivo da Sofia com Estados Vivos */}
         <div className="flex items-center gap-3.5">
           <div className="relative">
             <div
@@ -412,8 +390,6 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
                   : 'bg-chess-card border-chess-border'
               }`}
             >
-              <span>👩‍⚕️</span>
-              {/* Indicador de Estado Pulsante */}
               <span
                 className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-chess-darker flex items-center justify-center text-[8px] ${
                   avatarState === 'listening'
@@ -447,12 +423,10 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
           </div>
         </div>
 
-        {/* Controles de Voz, Modo e Reiniciar */}
         <div className="flex items-center gap-2">
-          {/* Alternador de Modo: Chat Livre vs Passo a Passo */}
           <div className="bg-chess-card p-1 rounded-xl border border-chess-border flex items-center text-xs font-semibold">
             <button
-              onClick={() => { playMove(); setInteractionMode('chat'); }}
+              onClick={() => { playClick(); setInteractionMode('chat'); }}
               className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
                 interactionMode === 'chat'
                   ? 'bg-chess-green text-white font-bold shadow-sm keep-white'
@@ -463,7 +437,7 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
               <span>Chat Livre</span>
             </button>
             <button
-              onClick={() => { playMove(); setInteractionMode('stepper'); }}
+              onClick={() => { playClick(); setInteractionMode('stepper'); }}
               className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
                 interactionMode === 'stepper'
                   ? 'bg-chess-green text-white font-bold shadow-sm keep-white'
@@ -475,10 +449,9 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
             </button>
           </div>
 
-          {/* Botão de Voz Sofia On/Off */}
           <button
             onClick={() => {
-              playMove();
+              playClick();
               const next = !voiceEnabled;
               setVoiceEnabled(next);
               if (next) speak('Voz ativada! Estou pronta para conversar.');
@@ -493,7 +466,6 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
             {voiceEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
           </button>
 
-          {/* Botão Resetar */}
           <button
             onClick={handleReset}
             title="Reiniciar atendimento"
@@ -504,12 +476,10 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
         </div>
       </div>
 
-      {/* Painel Central: Exibição do Check-in Confirmado ou Terminal */}
       {checkinResult ? (
-        /* Tela de Sucesso do Check-in Oficial */
         <div className="p-8 text-center space-y-6 animate-fadeIn">
           <div className="w-20 h-20 mx-auto rounded-3xl bg-chess-green/20 border-2 border-chess-green flex items-center justify-center text-4xl shadow-xl">
-            🎉
+            OK
           </div>
 
           <div className="space-y-2">
@@ -524,7 +494,6 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
             </p>
           </div>
 
-          {/* Cartão de Resumo do Atendimento */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-lg mx-auto bg-chess-card p-4 rounded-xl border border-chess-border text-left text-xs">
             <div>
               <span className="text-[10px] text-chess-gray uppercase font-bold block">Posição na Fila:</span>
@@ -548,7 +517,7 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
 
           <div className="p-3 bg-chess-darker border border-chess-border rounded-xl max-w-md mx-auto text-xs text-chess-gray">
             <p>
-              💡 Por favor, dirija-se ao nosso lounge climatizado. Nosso painel digital chamará sua senha assim que a sala estiver higienizada.
+              Por favor, dirija-se ao nosso lounge climatizado. Nosso painel digital chamará sua senha assim que a sala estiver higienizada.
             </p>
           </div>
 
@@ -562,11 +531,8 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
           </div>
         </div>
       ) : interactionMode === 'chat' ? (
-        /* MODO CHAT LIVRE (Conversação Inteligente com IA Sofia) */
         <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[460px]">
-          {/* Coluna do Diálogo Conversacional (8 colunas) */}
           <div className="lg:col-span-8 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-chess-border bg-chess-dark">
-            {/* Histórico de Mensagens */}
             <div className="p-4 sm:p-5 space-y-4 overflow-y-auto max-h-[380px] min-h-[300px]">
               {messages.map((msg) => (
                 <div
@@ -575,7 +541,7 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
                 >
                   {msg.sender === 'sofia' && (
                     <div className="w-8 h-8 rounded-xl bg-chess-card border border-chess-border flex items-center justify-center text-base flex-shrink-0">
-                      👩‍⚕️
+                      S
                     </div>
                   )}
 
@@ -590,7 +556,6 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
                       <p className="whitespace-pre-line">{msg.text}</p>
                     </div>
 
-                    {/* Chips de Resposta Rápida da Sofia */}
                     {msg.sender === 'sofia' && msg.suggestions && msg.suggestions.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 pt-1">
                         {msg.suggestions.map((sug, i) => (
@@ -605,7 +570,6 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
                       </div>
                     )}
 
-                    {/* Botão de Check-in Prévio Emitido pela Sofia */}
                     {msg.readyForCheckin && (
                       <div className="pt-2">
                         <button
@@ -623,16 +587,14 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
 
                   {msg.sender === 'user' && (
                     <div className="w-8 h-8 rounded-xl bg-chess-card border border-chess-border flex items-center justify-center text-xs font-bold text-chess-light flex-shrink-0">
-                      👤
+                      Eu
                     </div>
                   )}
                 </div>
               ))}
 
-              {/* Indicador de Digitação / Pensamento da Sofia */}
               {isProcessing && (
                 <div className="flex items-center gap-2 text-xs text-chess-gray bg-chess-card p-3 rounded-xl w-fit border border-chess-border animate-pulse">
-                  <span>👩‍⚕️</span>
                   <span>Sofia está analisando sua mensagem...</span>
                 </div>
               )}
@@ -640,7 +602,6 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
               <div ref={chatBottomRef} />
             </div>
 
-            {/* Input Bar com Reconhecimento de Voz e Envio */}
             <div className="p-3 sm:p-4 bg-chess-darker border-t border-chess-border">
               <form
                 onSubmit={(e) => {
@@ -649,7 +610,6 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
                 }}
                 className="flex items-center gap-2"
               >
-                {/* Botão de Microfone (Reconhecimento de Voz Nativo) */}
                 <button
                   type="button"
                   onClick={startVoiceRecognition}
@@ -688,7 +648,6 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
             </div>
           </div>
 
-          {/* Coluna da Ficha Clínica HUD (Heads-Up Display) Extraída em Tempo Real (4 colunas) */}
           <div className="lg:col-span-4 bg-chess-darker p-5 flex flex-col justify-between space-y-4">
             <div>
               <div className="flex items-center justify-between border-b border-chess-border pb-2.5 mb-3">
@@ -705,9 +664,7 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
                 Enquanto você conversa, a Sofia extrai automaticamente os dados clínicos para agilizar seu atendimento na cadeira odontológica.
               </p>
 
-              {/* Itens Extraídos */}
               <div className="space-y-2 text-xs">
-                {/* Nome */}
                 <div className="p-2.5 rounded-xl bg-chess-panel border border-chess-border flex items-center justify-between">
                   <span className="text-chess-gray flex items-center gap-1.5">
                     <User className="w-3.5 h-3.5 text-chess-green" />
@@ -718,7 +675,6 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
                   </span>
                 </div>
 
-                {/* Queixa Clínica */}
                 <div className="p-2.5 rounded-xl bg-chess-panel border border-chess-border flex items-center justify-between">
                   <span className="text-chess-gray flex items-center gap-1.5">
                     <Smile className="w-3.5 h-3.5 text-amber-500" />
@@ -729,7 +685,6 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
                   </span>
                 </div>
 
-                {/* Alergias */}
                 <div className="p-2.5 rounded-xl bg-chess-panel border border-chess-border space-y-1">
                   <span className="text-chess-gray flex items-center gap-1.5 text-[11px]">
                     <ShieldAlert className="w-3.5 h-3.5 text-rose-500" />
@@ -748,7 +703,6 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
                   )}
                 </div>
 
-                {/* Histórico & Condições */}
                 <div className="p-2.5 rounded-xl bg-chess-panel border border-chess-border space-y-1">
                   <span className="text-chess-gray flex items-center gap-1.5 text-[11px]">
                     <Heart className="w-3.5 h-3.5 text-blue-500" />
@@ -767,7 +721,6 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
                   )}
                 </div>
 
-                {/* Urgência */}
                 {clinicalData.urgencyLevel === 'alta' && (
                   <div className="p-2.5 rounded-xl bg-rose-500/15 border border-rose-500/40 flex items-center gap-2 text-rose-500 text-xs font-bold animate-pulse">
                     <AlertTriangle className="w-4 h-4 flex-shrink-0" />
@@ -777,7 +730,6 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
               </div>
             </div>
 
-            {/* Ação Direta para Emissão de Senha */}
             <div className="pt-2 border-t border-chess-border">
               <button
                 onClick={handleFinalizeCheckin}
@@ -791,9 +743,7 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
           </div>
         </div>
       ) : (
-        /* MODO STEPPER (Triagem Passo a Passo Guiada) */
         <div className="p-6 sm:p-8 space-y-6">
-          {/* Indicador de Passos */}
           <div className="flex items-center justify-between max-w-xl mx-auto">
             {[1, 2, 3, 4, 5].map((s) => (
               <div key={s} className="flex items-center gap-2">
@@ -813,7 +763,6 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
             ))}
           </div>
 
-          {/* Passo 1: Identificação */}
           {step === 1 && (
             <div className="max-w-md mx-auto space-y-4 animate-fadeIn">
               <div className="text-center space-y-1">
@@ -847,7 +796,7 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
                 <button
                   onClick={() => {
                     if (!clinicalData.name.trim()) return alert('Por favor, informe seu nome.');
-                    playMove();
+                    playClick();
                     setStep(2);
                   }}
                   className="chess-btn-green w-full py-3 rounded-xl text-white font-bold text-xs mt-2 keep-white"
@@ -858,7 +807,6 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
             </div>
           )}
 
-          {/* Passo 2: Motivo da Visita */}
           {step === 2 && (
             <div className="max-w-xl mx-auto space-y-4 animate-fadeIn">
               <div className="text-center space-y-1">
@@ -871,7 +819,7 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
                   <button
                     key={opt.id}
                     onClick={() => {
-                      playCapture();
+                      playAlert();
                       setClinicalData({ ...clinicalData, complaint: opt.label });
                       setStep(3);
                     }}
@@ -881,7 +829,6 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
                         : 'bg-chess-card border border-chess-border text-chess-light hover:border-chess-green'
                     }`}
                   >
-                    <span className="text-xl">{opt.icon}</span>
                     <span className="text-xs">{opt.label}</span>
                   </button>
                 ))}
@@ -889,7 +836,6 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
             </div>
           )}
 
-          {/* Passo 3: Alergias */}
           {step === 3 && (
             <div className="max-w-xl mx-auto space-y-4 animate-fadeIn">
               <div className="text-center space-y-1">
@@ -904,7 +850,7 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
                     <button
                       key={alg}
                       onClick={() => {
-                        playMove();
+                        playClick();
                         if (alg === 'Nenhuma Alergia Conhecida') {
                           setClinicalData({ ...clinicalData, allergies: ['Nenhuma Alergia Conhecida'] });
                         } else {
@@ -930,7 +876,7 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
 
               <div className="pt-2">
                 <button
-                  onClick={() => { playMove(); setStep(4); }}
+                  onClick={() => { playClick(); setStep(4); }}
                   className="chess-btn-green w-full py-3 rounded-xl text-white font-bold text-xs keep-white"
                 >
                   Continuar para Histórico de Saúde
@@ -939,7 +885,6 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
             </div>
           )}
 
-          {/* Passo 4: Histórico de Saúde */}
           {step === 4 && (
             <div className="max-w-xl mx-auto space-y-4 animate-fadeIn">
               <div className="text-center space-y-1">
@@ -954,7 +899,7 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
                     <button
                       key={item}
                       onClick={() => {
-                        playMove();
+                        playClick();
                         if (item === 'Nenhum Histórico Relevante') {
                           setClinicalData({ ...clinicalData, chronicConditions: ['Nenhum Histórico Relevante'] });
                         } else {
@@ -980,7 +925,7 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
 
               <div className="pt-2">
                 <button
-                  onClick={() => { playMove(); setStep(5); }}
+                  onClick={() => { playClick(); setStep(5); }}
                   className="chess-btn-green w-full py-3 rounded-xl text-white font-bold text-xs keep-white"
                 >
                   Continuar para Revisão Final
@@ -989,7 +934,6 @@ export const InteractiveReception = ({ onCheckinSuccess }) => {
             </div>
           )}
 
-          {/* Passo 5: Medicamentos & Confirmação Final */}
           {step === 5 && (
             <div className="max-w-md mx-auto space-y-4 animate-fadeIn">
               <div className="text-center space-y-1">

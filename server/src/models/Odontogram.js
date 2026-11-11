@@ -8,7 +8,7 @@ const surfaceSchema = new mongoose.Schema(
       default: 'higido',
     },
     material: {
-      type: String, // ex: Resina Composta, Amálgama, Cerômero, Zircônia
+      type: String,
       default: '',
     },
     notes: {
@@ -26,6 +26,7 @@ const toothRecordSchema = new mongoose.Schema(
       required: true,
       min: 11,
       max: 85,
+      validate: { validator: Number.isInteger, message: 'Número do dente inválido' },
     },
     generalCondition: {
       type: String,
@@ -89,7 +90,7 @@ const odontogramSchema = new mongoose.Schema(
     teeth: [toothRecordSchema],
     generalHealthScore: {
       type: Number,
-      default: 85, // 0 a 100%
+      default: 85,
     },
     tacticalSummary: {
       cariesCount: { type: Number, default: 0 },
@@ -107,5 +108,27 @@ const odontogramSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+const ADULT_TEETH = [
+  18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28,
+  48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38,
+];
+
+odontogramSchema.statics.buildAdultTeeth = function () {
+  return ADULT_TEETH.map((toothNumber) => ({
+    toothNumber,
+    generalCondition: 'higido',
+    surfaces: {
+      vestibular: { condition: 'higido' },
+      lingual: { condition: 'higido' },
+      mesial: { condition: 'higido' },
+      distal: { condition: 'higido' },
+      oclusal: { condition: 'higido' },
+    },
+    chessTactics: 'best',
+    price: 0,
+    status: 'higido',
+  }));
+};
 
 module.exports = mongoose.model('Odontogram', odontogramSchema);

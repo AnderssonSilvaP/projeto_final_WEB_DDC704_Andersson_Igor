@@ -1,44 +1,51 @@
 const MedicalRecord = require('../models/MedicalRecord');
+const Patient = require('../models/Patient');
+const { pick, checkId, sendNotFound, sendBadRequest } = require('./shared');
 
-// @desc    Obter Prontuário Eletrônico do Paciente (PEP)
-// @route   GET /api/medical-records/patient/:patientId
-// @access  Private
+const PATIENT_NOT_FOUND = 'Paciente não encontrado';
+const RECORD_NOT_FOUND = 'Prontuário não encontrado';
+const PATIENT_FIELDS = 'name cpf birthDate phone allergies chronicConditions eloScore';
+const ANAMNESE_FIELDS = [
+  'mainComplaint', 'historyOfPresentIllness', 'hypertension', 'diabetes', 'cardiacDisease',
+  'bleedingDisorder', 'isPregnant', 'isSmoker', 'allergiesDetails', 'medicationsInUse',
+  'previousSurgeries', 'anestheticReaction', 'bruxism', 'notes',
+];
+
+// Loads the record for a patient, answering 404 itself when the id or record is missing.
+const loadRecord = async (req, res) => {
+  if (!checkId(res, req.params.patientId, PATIENT_NOT_FOUND)) return null;
+  const record = await MedicalRecord.findOne({ patient: req.params.patientId });
+  if (!record) sendNotFound(res, RECORD_NOT_FOUND);
+  return record;
+};
+
 const getMedicalRecord = async (req, res, next) => {
   try {
-    let record = await MedicalRecord.findOne({ patient: req.params.patientId })
-      .populate('patient', 'name cpf birthDate phone allergies chronicConditions eloScore')
-      .populate('dentistInCharge', 'name specialty cro');
+    const { patientId } = req.params;
+    if (!checkId(res, patientId, PATIENT_NOT_FOUND)) return;
 
+    let record = await MedicalRecord.findOne({ patient: patientId });
     if (!record) {
-      record = await MedicalRecord.create({
-        patient: req.params.patientId,
-        dentistInCharge: req.user._id,
-      });
-      record = await MedicalRecord.findById(record._id)
-        .populate('patient', 'name cpf birthDate phone allergies chronicConditions eloScore')
-        .populate('dentistInCharge', 'name specialty cro');
+      if (!(await Patient.exists({ _id: patientId }))) return sendNotFound(res, PATIENT_NOT_FOUND);
+      record = await MedicalRecord.create({ patient: patientId, dentistInCharge: req.user._id });
     }
 
-    res.json({
-      success: true,
-      medicalRecord: record,
-    });
+    record = await MedicalRecord.findById(record._id)
+      .populate('patient', PATIENT_FIELDS)
+      .populate('dentistInCharge', 'name specialty cro');
+
+    res.json({ success: true, medicalRecord: record });
   } catch (error) {
     next(error);
   }
 };
 
-// @desc    Atualizar Anamnese
-// @route   PUT /api/medical-records/patient/:patientId/anamnese
-// @access  Private
 const updateAnamnese = async (req, res, next) => {
   try {
-    const record = await MedicalRecord.findOne({ patient: req.params.patientId });
-    if (!record) {
-      return res.status(404).json({ success: false, message: 'Prontuário não encontrado' });
-    }
+    const record = await loadRecord(req, res);
+    if (!record) return;
 
-    record.anamnese = { ...record.anamnese.toObject(), ...req.body };
+    record.anamnese = { ...record.anamnese.toObject(), ...pick(req.body, ANAMNESE_FIELDS) };
     await record.save();
 
     res.json({
@@ -51,29 +58,15 @@ const updateAnamnese = async (req, res, next) => {
   }
 };
 
-// @desc    Adicionar Evolução Clínica
-// @route   POST /api/medical-records/patient/:patientId/evolutions
-// @access  Private
 const addEvolution = async (req, res, next) => {
   try {
-    const { procedureDescription, teethInvolved, anesthesiaUsed, patientEvolutionState, nextStep } = req.body;
-    const record = await MedicalRecord.findOne({ patient: req.params.patientId });
+    const record = await loadRecord(req, res);
+    if (!record) return;
 
-    if (!record) {
-      return res.status(404).json({ success: false, message: 'Prontuário não encontrado' });
-    }
-
-    const newEvolution = {
-      dentistName: req.user.name,
-      procedureDescription,
-      teethInvolved: teethInvolved || [],
-      anesthesiaUsed: anesthesiaUsed || '',
-      patientEvolutionState: patientEvolutionState || 'Normal',
-      nextStep: nextStep || '',
-      date: new Date(),
-    };
-
-    record.clinicalEvolutions.unshift(newEvolution);
+    const data = pick(req.body, [
+      'procedureDescription', 'teethInvolved', 'anesthesiaUsed', 'patientEvolutionState', 'nextStep',
+    ]);
+    record.clinicalEvolutions.unshift({ ...data, dentistName: req.user.name, date: new Date() });
     await record.save();
 
     res.status(201).json({
@@ -86,26 +79,22 @@ const addEvolution = async (req, res, next) => {
   }
 };
 
-// @desc    Emitir Receita Odontológica
-// @route   POST /api/medical-records/patient/:patientId/prescriptions
-// @access  Private
 const addPrescription = async (req, res, next) => {
   try {
     const { medications, generalInstructions } = req.body;
-    const record = await MedicalRecord.findOne({ patient: req.params.patientId });
-
-    if (!record) {
-      return res.status(404).json({ success: false, message: 'Prontuário não encontrado' });
+    if (!Array.isArray(medications) || medications.length === 0) {
+      return sendBadRequest(res, 'Informe ao menos um medicamento na receita.');
     }
 
-    const prescription = {
+    const record = await loadRecord(req, res);
+    if (!record) return;
+
+    record.prescriptions.unshift({
       dentistName: req.user.name,
-      medications: medications || [],
+      medications: medications.map((m) => pick(m, ['name', 'dosage', 'frequency', 'duration', 'instructions'])),
       generalInstructions: generalInstructions || 'Tomar conforme posologia prescrita.',
       date: new Date(),
-    };
-
-    record.prescriptions.unshift(prescription);
+    });
     await record.save();
 
     res.status(201).json({
@@ -118,28 +107,13 @@ const addPrescription = async (req, res, next) => {
   }
 };
 
-// @desc    Emitir Atestado Odontológico
-// @route   POST /api/medical-records/patient/:patientId/certificates
-// @access  Private
 const addCertificate = async (req, res, next) => {
   try {
-    const { daysOff, cidCode, cidDescription, period } = req.body;
-    const record = await MedicalRecord.findOne({ patient: req.params.patientId });
+    const record = await loadRecord(req, res);
+    if (!record) return;
 
-    if (!record) {
-      return res.status(404).json({ success: false, message: 'Prontuário não encontrado' });
-    }
-
-    const certificate = {
-      dentistName: req.user.name,
-      daysOff: daysOff || 1,
-      cidCode: cidCode || 'K02.1',
-      cidDescription: cidDescription || 'Procedimento cirúrgico/restaurador odontológico',
-      period: period || 'Repouso domiciliar',
-      date: new Date(),
-    };
-
-    record.certificates.unshift(certificate);
+    const data = pick(req.body, ['daysOff', 'cidCode', 'cidDescription', 'period']);
+    record.certificates.unshift({ ...data, dentistName: req.user.name, date: new Date() });
     await record.save();
 
     res.status(201).json({
@@ -152,26 +126,13 @@ const addCertificate = async (req, res, next) => {
   }
 };
 
-// @desc    Adicionar Radiografia / Exame
-// @route   POST /api/medical-records/patient/:patientId/radiographs
-// @access  Private
 const addRadiograph = async (req, res, next) => {
   try {
-    const { title, type, url, findings } = req.body;
-    const record = await MedicalRecord.findOne({ patient: req.params.patientId });
+    const record = await loadRecord(req, res);
+    if (!record) return;
 
-    if (!record) {
-      return res.status(404).json({ success: false, message: 'Prontuário não encontrado' });
-    }
-
-    record.radiographs.unshift({
-      title,
-      type: type || 'panoramica',
-      url: url || 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?auto=format&fit=crop&q=80&w=600',
-      findings: findings || 'Sem alterações patológicas visíveis na crista óssea.',
-      date: new Date(),
-    });
-
+    const data = pick(req.body, ['title', 'type', 'url', 'findings']);
+    record.radiographs.unshift({ ...data, date: new Date() });
     await record.save();
 
     res.status(201).json({

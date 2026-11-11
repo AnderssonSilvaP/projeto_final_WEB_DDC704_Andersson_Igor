@@ -1,5 +1,4 @@
 const express = require('express');
-const router = express.Router();
 const {
   getTransactions,
   createTransaction,
@@ -8,13 +7,15 @@ const {
 } = require('../controllers/financialController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
+const router = express.Router();
+
 router.use(protect);
 
-router.get('/summary', getFinancialSummary);
+router.get('/summary', authorize('admin', 'dentista'), getFinancialSummary);
 
 router.route('/transactions')
-  .get(getTransactions)
-  .post(createTransaction);
+  .get(authorize('admin', 'dentista', 'recepcao'), getTransactions)
+  .post(authorize('admin', 'recepcao'), createTransaction);
 
 router.delete('/transactions/:id', authorize('admin'), deleteTransaction);
 

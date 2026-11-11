@@ -1,19 +1,12 @@
 import React, { useState } from 'react';
 import {
-  Sparkles,
-  AlertTriangle,
   CheckCircle2,
   FileSpreadsheet,
-  Layers,
-  Info,
-  DollarSign,
-  ChevronRight,
   Shield,
   Zap,
 } from 'lucide-react';
 import { useAudio } from '../context/AudioContext';
 
-// Procedimentos e cores padrão odontológico
 export const CONDITIONS = [
   { id: 'higido', label: 'Hígido (Sadio)', color: '#ffffff', fill: '#3d3a34', tactic: 'best', symbol: '✓', badge: 'Saudável' },
   { id: 'carie', label: 'Cárie Dentária', color: '#fa4141', fill: '#fa4141', tactic: 'blunder', symbol: 'C', badge: 'Tratar' },
@@ -43,15 +36,15 @@ export const OdontogramView = ({
   readOnly = false,
   healthScore = 85,
 }) => {
-  const { playMove, playCapture, playBlunder, playBrilliant } = useAudio();
-  const [archType, setArchType] = useState('adulto'); // 'adulto' | 'infantil'
+  const { playClick, playAlert, playError, playSuccess } = useAudio();
+  const [archType, setArchType] = useState('adulto');
+
   const [selectedTooth, setSelectedTooth] = useState(16);
   const [selectedSurface, setSelectedSurface] = useState('oclusal');
   const [selectedCondition, setSelectedCondition] = useState('carie');
   const [customPrice, setCustomPrice] = useState(180);
   const [toothNote, setToothNote] = useState('');
 
-  // Localiza dados do dente selecionado
   const currentToothData = teeth.find((t) => t.toothNumber === selectedTooth) || {
     toothNumber: selectedTooth,
     generalCondition: 'higido',
@@ -66,7 +59,7 @@ export const OdontogramView = ({
   };
 
   const handleToothClick = (toothNum) => {
-    playMove();
+    playClick();
     setSelectedTooth(toothNum);
     const found = teeth.find((t) => t.toothNumber === toothNum);
     if (found) {
@@ -83,9 +76,9 @@ export const OdontogramView = ({
   const handleApplyCondition = () => {
     if (!onUpdateTooth) return;
 
-    if (selectedCondition === 'carie') playBlunder();
-    else if (selectedCondition === 'implante' || selectedCondition === 'coroa') playBrilliant();
-    else playCapture();
+    if (selectedCondition === 'carie') playError();
+    else if (selectedCondition === 'implante' || selectedCondition === 'coroa') playSuccess();
+    else playAlert();
 
     const conditionObj = CONDITIONS.find((c) => c.id === selectedCondition);
 
@@ -125,7 +118,6 @@ export const OdontogramView = ({
     return cond;
   };
 
-  // Renderizador SVG de cada Dente anatômico com 5 faces
   const renderToothSVG = (toothNum) => {
     const isSelected = selectedTooth === toothNum;
     const badge = getToothBadge(toothNum);
@@ -146,7 +138,6 @@ export const OdontogramView = ({
             : 'hover:bg-chess-panel/60 bg-chess-darker border border-chess-border/60'
         }`}
       >
-        {/* Número FDI do Dente */}
         <span
           className={`text-[11px] font-black font-mono mb-1 ${
             isSelected ? 'text-chess-green' : 'text-chess-gray'
@@ -155,12 +146,9 @@ export const OdontogramView = ({
           {toothNum}
         </span>
 
-        {/* SVG Anatômico de 5 Faces */}
         <svg width="44" height="44" viewBox="0 0 100 100" className="drop-shadow">
-          {/* Fundo do dente */}
           <rect x="5" y="5" width="90" height="90" rx="14" fill="#1e1e1b" stroke="#3d3a34" strokeWidth="3" />
 
-          {/* Face Vestibular (Topo) */}
           <polygon
             points="10,10 90,10 70,30 30,30"
             fill={vestColor}
@@ -169,7 +157,6 @@ export const OdontogramView = ({
             className="hover:opacity-80 transition-opacity"
           />
 
-          {/* Face Lingual / Palatina (Base) */}
           <polygon
             points="30,70 70,70 90,90 10,90"
             fill={lingColor}
@@ -178,7 +165,6 @@ export const OdontogramView = ({
             className="hover:opacity-80 transition-opacity"
           />
 
-          {/* Face Mesial (Esquerda) */}
           <polygon
             points="10,10 30,30 30,70 10,90"
             fill={mesColor}
@@ -187,7 +173,6 @@ export const OdontogramView = ({
             className="hover:opacity-80 transition-opacity"
           />
 
-          {/* Face Distal (Direita) */}
           <polygon
             points="90,10 70,30 70,70 90,90"
             fill={distColor}
@@ -196,7 +181,6 @@ export const OdontogramView = ({
             className="hover:opacity-80 transition-opacity"
           />
 
-          {/* Face Oclusal / Incisal (Centro) */}
           <polygon
             points="30,30 70,30 70,70 30,70"
             fill={oclColor}
@@ -206,7 +190,6 @@ export const OdontogramView = ({
           />
         </svg>
 
-        {/* Badge Tático de Xadrez (Ex: ?? para Cárie, !! para Implante) */}
         {badge && (
           <span
             className="absolute -top-1.5 -right-1.5 px-1 py-0.5 rounded text-[9px] font-black leading-none shadow-md"
@@ -226,14 +209,12 @@ export const OdontogramView = ({
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      {/* Tabuleiro Odontológico (Arcada Dentária 2D) */}
       <div className="lg:col-span-8 bg-chess-panel border border-chess-border rounded-2xl p-5 shadow-chess-card flex flex-col justify-between">
-        {/* Top Controls: Adulto/Infantil e Score Bucal */}
         <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-chess-border">
           <div className="flex items-center gap-3">
             <div className="flex bg-chess-darker p-1 rounded-xl border border-chess-border">
               <button
-                onClick={() => { playMove(); setArchType('adulto'); }}
+                onClick={() => { playClick(); setArchType('adulto'); }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                   archType === 'adulto'
                     ? 'bg-chess-green text-white shadow-chess-btn'
@@ -243,7 +224,7 @@ export const OdontogramView = ({
                 Arcada Adulta (32 dentes)
               </button>
               <button
-                onClick={() => { playMove(); setArchType('infantil'); }}
+                onClick={() => { playClick(); setArchType('infantil'); }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                   archType === 'infantil'
                     ? 'bg-chess-green text-white shadow-chess-btn'
@@ -255,7 +236,6 @@ export const OdontogramView = ({
             </div>
           </div>
 
-          {/* Dental Health Score */}
           <div className="flex items-center gap-3">
             <div className="text-right">
               <span className="text-[10px] uppercase font-bold text-chess-gray">Índice Bucal</span>
@@ -267,35 +247,27 @@ export const OdontogramView = ({
           </div>
         </div>
 
-        {/* Arcada Superior (Maxila) */}
         <div className="my-6">
           <div className="text-center text-[10px] font-extrabold uppercase tracking-widest text-chess-gray mb-2">
             Arcada Superior (Maxila)
           </div>
           <div className="flex items-center justify-center gap-4 bg-chess-dark/60 p-4 rounded-xl border border-chess-border/80">
-            {/* Q1: Superior Direito */}
             <div className="flex items-center gap-1.5">
               {upperRight.map((n) => renderToothSVG(n))}
             </div>
-            {/* Linha Média Central */}
             <div className="w-[2px] h-14 bg-chess-green/40 rounded-full" />
-            {/* Q2: Superior Esquerdo */}
             <div className="flex items-center gap-1.5">
               {upperLeft.map((n) => renderToothSVG(n))}
             </div>
           </div>
         </div>
 
-        {/* Arcada Inferior (Mandíbula) */}
         <div className="my-2">
           <div className="flex items-center justify-center gap-4 bg-chess-dark/60 p-4 rounded-xl border border-chess-border/80">
-            {/* Q4: Inferior Direito */}
             <div className="flex items-center gap-1.5">
               {lowerRight.map((n) => renderToothSVG(n))}
             </div>
-            {/* Linha Média Central */}
             <div className="w-[2px] h-14 bg-chess-green/40 rounded-full" />
-            {/* Q3: Inferior Esquerdo */}
             <div className="flex items-center gap-1.5">
               {lowerLeft.map((n) => renderToothSVG(n))}
             </div>
@@ -305,7 +277,6 @@ export const OdontogramView = ({
           </div>
         </div>
 
-        {/* Legenda de Procedimentos */}
         <div className="mt-6 pt-4 border-t border-chess-border">
           <div className="text-[11px] font-bold uppercase text-chess-gray mb-2">
             Legenda Clínica Padronizada:
@@ -325,9 +296,7 @@ export const OdontogramView = ({
         </div>
       </div>
 
-      {/* Painel Clínico de Diagnóstico & Procedimento */}
       <div className="lg:col-span-4 flex flex-col gap-4">
-        {/* Painel do Dente Selecionado */}
         <div className="bg-chess-panel border border-chess-border rounded-2xl p-5 shadow-chess-card flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-3 border-b border-chess-border mb-4">
@@ -341,11 +310,9 @@ export const OdontogramView = ({
                 </h4>
               </div>
               <div className="w-10 h-10 rounded-xl bg-chess-dark flex items-center justify-center border border-chess-border">
-                <span className="text-xl">🦷</span>
               </div>
             </div>
 
-            {/* Seletor de Face */}
             <div className="mb-4">
               <label className="block text-xs font-bold text-chess-gray mb-1.5 uppercase">
                 Face Anatômica:
@@ -361,7 +328,7 @@ export const OdontogramView = ({
                 ].map((s) => (
                   <button
                     key={s.id}
-                    onClick={() => { playMove(); setSelectedSurface(s.id); }}
+                    onClick={() => { playClick(); setSelectedSurface(s.id); }}
                     className={`py-1.5 px-2 rounded-lg text-xs font-bold border transition-all text-center ${
                       selectedSurface === s.id
                         ? 'bg-chess-green/20 border-chess-green text-chess-green'
@@ -374,7 +341,6 @@ export const OdontogramView = ({
               </div>
             </div>
 
-            {/* Seletor de Procedimento / Condição */}
             <div className="mb-4">
               <label className="block text-xs font-bold text-chess-gray mb-1.5 uppercase">
                 Procedimento / Diagnóstico:
@@ -382,7 +348,7 @@ export const OdontogramView = ({
               <select
                 value={selectedCondition}
                 onChange={(e) => {
-                  playMove();
+                  playClick();
                   setSelectedCondition(e.target.value);
                   const priceMap = {
                     higido: 0,
@@ -407,7 +373,6 @@ export const OdontogramView = ({
               </select>
             </div>
 
-            {/* Valor Sugerido / Honorário */}
             <div className="mb-4">
               <label className="block text-xs font-bold text-chess-gray mb-1.5 uppercase">
                 Honorário Estimado (R$):
@@ -423,7 +388,6 @@ export const OdontogramView = ({
               </div>
             </div>
 
-            {/* Observações Clínicas */}
             <div className="mb-5">
               <label className="block text-xs font-bold text-chess-gray mb-1.5 uppercase">
                 Observações Clínicas / Detalhes:
@@ -438,7 +402,6 @@ export const OdontogramView = ({
             </div>
           </div>
 
-          {/* Botão Salvar Condição */}
           <button
             onClick={handleApplyCondition}
             className="w-full py-2.5 rounded-xl text-sm font-extrabold chess-btn-green flex items-center justify-center gap-2 mb-3"
@@ -448,7 +411,6 @@ export const OdontogramView = ({
           </button>
         </div>
 
-        {/* Gerador de Orçamento Direto a partir do Odontograma */}
         {onGenerateBudget && (
           <div className="bg-chess-panel border border-chess-border rounded-2xl p-4 shadow-chess-card">
             <div className="flex items-center gap-3 mb-3">
@@ -464,7 +426,7 @@ export const OdontogramView = ({
             </div>
             <button
               onClick={() => {
-                playBrilliant();
+                playSuccess();
                 onGenerateBudget();
               }}
               className="w-full py-2.5 rounded-xl text-xs font-black chess-btn-gold flex items-center justify-center gap-2"

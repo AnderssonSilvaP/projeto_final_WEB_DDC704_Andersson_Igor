@@ -1,7 +1,7 @@
 {
-  "name": "odontochess-server",
+  "name": "odontocheck-server",
   "version": "1.0.0",
-  "description": "API Backend para Sistema Odontológico OdontoChess no estilo Chess.com",
+  "description": "API do OdontoCheck (Express + MongoDB)",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",

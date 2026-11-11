@@ -1,33 +1,25 @@
-const errorHandler = (err, req, res, next) => {
-  let statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+function errorHandler(err, req, res, next) {
+  let status = res.statusCode >= 400 ? res.statusCode : 500;
   let message = err.message || 'Erro interno do servidor';
 
-  // Mongoose bad ObjectId
   if (err.name === 'CastError') {
-    message = `Recurso não encontrado com o ID: ${err.value}`;
-    statusCode = 404;
+    status = 404;
+    message = `Recurso não encontrado: ${err.value}`;
+  } else if (err.code === 11000) {
+    status = 400;
+    message = `Já existe um registro com este valor para: ${Object.keys(err.keyValue).join(', ')}`;
+  } else if (err.name === 'ValidationError') {
+    status = 400;
+    message = Object.values(err.errors).map((e) => e.message).join(', ');
   }
 
-  // Mongoose duplicate key
-  if (err.code === 11000) {
-    const field = Object.keys(err.keyValue)[0];
-    message = `Valor duplicado para o campo: '${field}'. Este registro já existe no sistema.`;
-    statusCode = 400;
-  }
+  if (status === 500) console.error(err);
 
-  // Mongoose validation error
-  if (err.name === 'ValidationError') {
-    message = Object.values(err.errors)
-      .map((val) => val.message)
-      .join(', ');
-    statusCode = 400;
-  }
-
-  res.status(statusCode).json({
+  res.status(status).json({
     success: false,
     message,
-    stack: process.env.NODE_ENV === 'production' ? null : err.stack,
+    ...(process.env.NODE_ENV !== 'production' && { stack: err.stack }),
   });
-};
+}
 
 module.exports = { errorHandler };

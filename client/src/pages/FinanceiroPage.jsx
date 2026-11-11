@@ -1,28 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import {
   DollarSign,
-  TrendingUp,
-  TrendingDown,
   Plus,
-  Filter,
-  CheckCircle,
-  CreditCard,
-  QrCode,
-  Users,
-  Award,
 } from 'lucide-react';
 import { api } from '../services/api';
+import { Spinner } from '../components/Spinner';
 import { Modal } from '../components/Modal';
 import { useAudio } from '../context/AudioContext';
 
 export const FinanceiroPage = () => {
-  const { playMove, playCapture, playBrilliant } = useAudio();
+  const { playClick, playSuccess } = useAudio();
   const [summary, setSummary] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [typeFilter, setTypeFilter] = useState('todos');
   const [loading, setLoading] = useState(true);
 
-  // Modal Novo Lançamento
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newTrans, setNewTrans] = useState({
     type: 'receita',
@@ -55,7 +47,7 @@ export const FinanceiroPage = () => {
   const handleCreateTransaction = async (e) => {
     e.preventDefault();
     try {
-      playBrilliant();
+      playSuccess();
       await api.post('/financial/transactions', {
         ...newTrans,
         amount: Number(newTrans.amount),
@@ -75,9 +67,10 @@ export const FinanceiroPage = () => {
     }
   };
 
+  if (loading) return <Spinner />;
+
   return (
     <div className="space-y-6">
-      {/* Top Bar */}
       <div className="bg-chess-panel border border-chess-border rounded-2xl p-5 shadow-chess-card flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl bg-chess-darker border border-chess-border text-chess-green">
@@ -92,7 +85,7 @@ export const FinanceiroPage = () => {
         </div>
 
         <button
-          onClick={() => { playMove(); setIsModalOpen(true); }}
+          onClick={() => { playClick(); setIsModalOpen(true); }}
           className="px-4 py-2 rounded-xl text-xs font-black chess-btn-green flex items-center gap-2"
         >
           <Plus className="w-4 h-4" />
@@ -100,7 +93,6 @@ export const FinanceiroPage = () => {
         </button>
       </div>
 
-      {/* KPI Cards Financeiros */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-chess-panel border border-chess-border rounded-xl p-4 shadow-chess-card">
           <span className="text-xs font-bold text-chess-gray uppercase">Receita Total</span>
@@ -137,7 +129,6 @@ export const FinanceiroPage = () => {
         </div>
       </div>
 
-      {/* Transações & Filtros */}
       <div className="bg-chess-panel border border-chess-border rounded-2xl p-5 shadow-chess-card space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-chess-border">
           <h4 className="text-base font-extrabold text-white">Extrato de Lançamentos</h4>
@@ -146,7 +137,7 @@ export const FinanceiroPage = () => {
             {['todos', 'receita', 'despesa'].map((t) => (
               <button
                 key={t}
-                onClick={() => { playMove(); setTypeFilter(t); }}
+                onClick={() => { playClick(); setTypeFilter(t); }}
                 className={`px-3 py-1.5 rounded-lg font-bold capitalize transition-all ${
                   typeFilter === t
                     ? 'bg-chess-green text-white shadow-chess-btn'
@@ -207,7 +198,6 @@ export const FinanceiroPage = () => {
         </div>
       </div>
 
-      {/* Modal Novo Lançamento */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

@@ -1,5 +1,4 @@
 const express = require('express');
-const router = express.Router();
 const {
   getSupplies,
   createSupply,
@@ -9,7 +8,9 @@ const {
 } = require('../controllers/supplyController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
-router.use(protect);
+const router = express.Router();
+
+router.use(protect, authorize('admin', 'dentista', 'recepcao'));
 
 router.route('/')
   .get(getSupplies)

@@ -1,15 +1,10 @@
 const mongoose = require('mongoose');
 
-const connectDB = async () => {
-  try {
-    const conn = await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/odontochess', {
-      serverSelectionTimeoutMS: 5000,
-    });
-    console.log(`♟️ [OdontoChess DB] Conectado ao MongoDB: ${conn.connection.host}/${conn.connection.name}`);
-  } catch (error) {
-    console.error(`❌ [OdontoChess DB Erro] Falha na conexão: ${error.message}`);
-    process.exit(1);
-  }
-};
+async function connectDB() {
+  const uri = process.env.MONGO_URI;
+  if (!uri) throw new Error('MONGO_URI não definida');
+  const { connection } = await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 });
+  console.log(`MongoDB conectado: ${connection.host}/${connection.name}`);
+}
 
 module.exports = connectDB;

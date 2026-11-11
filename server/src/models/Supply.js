@@ -25,7 +25,7 @@ const supplySchema = new mongoose.Schema(
     },
     unit: {
       type: String,
-      default: 'unidades', // 'caixas', 'tubetes', 'seringas', 'frascos', 'pacotes'
+      default: 'unidades',
     },
     batchNumber: {
       type: String,

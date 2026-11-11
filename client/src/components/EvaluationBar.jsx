@@ -1,7 +1,6 @@
 import React from 'react';
 
 export const EvaluationBar = ({ score = 4.5, label = 'Performance Clínica', subtitle = 'Indicador de Eficiência' }) => {
-  // Score de -5 a +10 mapeado para 0% a 100% da barra
   const percentage = Math.min(95, Math.max(5, ((score + 5) / 15) * 100));
   const isPositive = score >= 0;
 
@@ -29,7 +28,6 @@ export const EvaluationBar = ({ score = 4.5, label = 'Performance Clínica', sub
         </div>
       </div>
 
-      {/* Visual Efficiency Bar */}
       <div className="relative w-full h-5 bg-chess-darkest rounded-md overflow-hidden border border-chess-border flex">
         <div
           className="h-full bg-chess-green transition-all duration-700 ease-out flex items-center justify-end px-2"
@@ -51,7 +49,6 @@ export const EvaluationBar = ({ score = 4.5, label = 'Performance Clínica', sub
             </span>
           )}
         </div>
-        {/* Center 0.0 marker */}
         <div className="absolute top-0 bottom-0 left-[33.3%] w-[2px] bg-chess-border/60 z-10" />
       </div>
 

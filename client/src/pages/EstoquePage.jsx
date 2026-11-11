@@ -5,23 +5,19 @@ import {
   Plus,
   Minus,
   Search,
-  CheckCircle,
-  Clock,
-  Layers,
-  Sparkles,
 } from 'lucide-react';
 import { api } from '../services/api';
+import { Spinner } from '../components/Spinner';
 import { Modal } from '../components/Modal';
 import { useAudio } from '../context/AudioContext';
 
 export const EstoquePage = () => {
-  const { playMove, playCapture, playBlunder, playBrilliant } = useAudio();
+  const { playClick, playAlert, playSuccess } = useAudio();
   const [supplies, setSupplies] = useState([]);
   const [categoryFilter, setCategoryFilter] = useState('todos');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
 
-  // Modal Novo Material
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newSupply, setNewSupply] = useState({
     name: '',
@@ -54,8 +50,8 @@ export const EstoquePage = () => {
 
   const handleAdjustStock = async (id, delta) => {
     try {
-      if (delta > 0) playCapture();
-      else playMove();
+      if (delta > 0) playAlert();
+      else playClick();
 
       await api.patch(`/supplies/${id}/adjust`, { delta });
       fetchSupplies();
@@ -67,7 +63,7 @@ export const EstoquePage = () => {
   const handleCreateSupply = async (e) => {
     e.preventDefault();
     try {
-      playBrilliant();
+      playSuccess();
       await api.post('/supplies', {
         ...newSupply,
         currentStock: Number(newSupply.currentStock),
@@ -94,9 +90,10 @@ export const EstoquePage = () => {
     }
   };
 
+  if (loading) return <Spinner />;
+
   return (
     <div className="space-y-6">
-      {/* Top Bar */}
       <div className="bg-chess-panel border border-chess-border rounded-2xl p-5 shadow-chess-card flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl bg-chess-darker border border-chess-border text-chess-gold">
@@ -111,7 +108,7 @@ export const EstoquePage = () => {
         </div>
 
         <button
-          onClick={() => { playMove(); setIsModalOpen(true); }}
+          onClick={() => { playClick(); setIsModalOpen(true); }}
           className="px-4 py-2 rounded-xl text-xs font-black chess-btn-green flex items-center gap-2"
         >
           <Plus className="w-4 h-4" />
@@ -119,7 +116,6 @@ export const EstoquePage = () => {
         </button>
       </div>
 
-      {/* Filter and Search */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-chess-darker p-3 rounded-2xl border border-chess-border">
         <div className="relative w-full sm:w-80">
           <Search className="w-4 h-4 absolute left-3 top-2.5 text-chess-gray" />
@@ -143,7 +139,7 @@ export const EstoquePage = () => {
           ].map((c) => (
             <button
               key={c.id}
-              onClick={() => { playMove(); setCategoryFilter(c.id); }}
+              onClick={() => { playClick(); setCategoryFilter(c.id); }}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
                 categoryFilter === c.id
                   ? 'bg-chess-green text-white shadow-chess-btn'
@@ -156,7 +152,6 @@ export const EstoquePage = () => {
         </div>
       </div>
 
-      {/* Grid de Materiais */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {supplies.map((item) => {
           const isLow = item.currentStock <= item.minStock;
@@ -192,7 +187,6 @@ export const EstoquePage = () => {
                 </div>
               </div>
 
-              {/* Contador de Estoque Rápido */}
               <div className="pt-2 flex items-center justify-between">
                 <div className="text-xs">
                   <span className="text-chess-gray">Mínimo: {item.minStock} {item.unit}</span>
@@ -225,7 +219,6 @@ export const EstoquePage = () => {
         })}
       </div>
 
-      {/* Modal Novo Material */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

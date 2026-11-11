@@ -4,15 +4,9 @@ import {
   Calendar,
   DollarSign,
   AlertTriangle,
-  Layers,
-  Clock,
-  CheckCircle,
-  AlertCircle,
   Play,
   ArrowRight,
   TrendingUp,
-  Award,
-  Sparkles,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { EvaluationBar } from '../components/EvaluationBar';
@@ -21,7 +15,7 @@ import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 
 export const Dashboard = ({ onOpenNewPatient, onOpenNewAppointment }) => {
-  const { playMove, playCapture, playBrilliant } = useAudio();
+  const { playAlert } = useAudio();
   const { user } = useAuth();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -39,13 +33,14 @@ export const Dashboard = ({ onOpenNewPatient, onOpenNewAppointment }) => {
 
   useEffect(() => {
     fetchDashboardStats();
-    const interval = setInterval(fetchDashboardStats, 30000); // Polling a cada 30s
+    const interval = setInterval(fetchDashboardStats, 30000);
+
     return () => clearInterval(interval);
   }, []);
 
   const handleStatusChange = async (appointmentId, newStatus) => {
     try {
-      playCapture();
+      playAlert();
       await api.patch(`/appointments/${appointmentId}/status`, { status: newStatus });
       fetchDashboardStats();
     } catch (err) {
@@ -66,7 +61,6 @@ export const Dashboard = ({ onOpenNewPatient, onOpenNewAppointment }) => {
 
   return (
     <div className="space-y-6">
-      {/* Welcome Banner / Status Clínico */}
       <div className="bg-gradient-to-r from-chess-darker via-chess-panel to-chess-dark border border-chess-border rounded-2xl p-6 shadow-chess-card flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -96,16 +90,13 @@ export const Dashboard = ({ onOpenNewPatient, onOpenNewAppointment }) => {
         </div>
       </div>
 
-      {/* Clinic Efficiency Evaluation Bar */}
       <EvaluationBar
-        score={stats?.stockfishEvaluation?.score || 4.8}
-        label={stats?.stockfishEvaluation?.advantage || 'Excelente Eficiência Operacional'}
+        score={stats?.efficiency?.score || 4.8}
+        label={stats?.efficiency?.advantage || 'Excelente Eficiência Operacional'}
         subtitle="Indicador de Eficiência & Rentabilidade"
       />
 
-      {/* KPI Cards em Estilo Chess.com */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: Consultas Hoje */}
         <div className="bg-chess-panel border border-chess-border rounded-xl p-4 shadow-chess-card">
           <div className="flex items-center justify-between text-chess-gray mb-2">
             <span className="text-xs font-bold uppercase tracking-wider">Consultas Hoje</span>
@@ -121,7 +112,6 @@ export const Dashboard = ({ onOpenNewPatient, onOpenNewAppointment }) => {
           </div>
         </div>
 
-        {/* Card 2: Faturamento do Mês */}
         <div className="bg-chess-panel border border-chess-border rounded-xl p-4 shadow-chess-card">
           <div className="flex items-center justify-between text-chess-gray mb-2">
             <span className="text-xs font-bold uppercase tracking-wider">Receita do Mês</span>
@@ -138,7 +128,6 @@ export const Dashboard = ({ onOpenNewPatient, onOpenNewAppointment }) => {
           </div>
         </div>
 
-        {/* Card 3: Pacientes Ativos */}
         <div className="bg-chess-panel border border-chess-border rounded-xl p-4 shadow-chess-card">
           <div className="flex items-center justify-between text-chess-gray mb-2">
             <span className="text-xs font-bold uppercase tracking-wider">Pacientes Ativos</span>
@@ -152,7 +141,6 @@ export const Dashboard = ({ onOpenNewPatient, onOpenNewAppointment }) => {
           </div>
         </div>
 
-        {/* Card 4: Alertas de Insumos & Próteses */}
         <div className="bg-chess-panel border border-chess-border rounded-xl p-4 shadow-chess-card">
           <div className="flex items-center justify-between text-chess-gray mb-2">
             <span className="text-xs font-bold uppercase tracking-wider">Alertas do Consultório</span>
@@ -169,9 +157,7 @@ export const Dashboard = ({ onOpenNewPatient, onOpenNewAppointment }) => {
         </div>
       </div>
 
-      {/* Fila da Sala de Espera ao Vivo & Agenda de Hoje */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Sala de Espera ao Vivo (Recepção) */}
         <div className="lg:col-span-5 bg-chess-panel border border-chess-border rounded-2xl p-5 shadow-chess-card flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-3 border-b border-chess-border mb-4">
@@ -229,7 +215,6 @@ export const Dashboard = ({ onOpenNewPatient, onOpenNewAppointment }) => {
           </div>
         </div>
 
-        {/* Próximos Atendimentos do Dia */}
         <div className="lg:col-span-7 bg-chess-panel border border-chess-border rounded-2xl p-5 shadow-chess-card">
           <div className="flex items-center justify-between pb-3 border-b border-chess-border mb-4">
             <h3 className="text-base font-extrabold text-white">Cronograma de Atendimentos de Hoje</h3>

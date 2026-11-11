@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AudioProvider } from './context/AudioContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -7,7 +7,6 @@ import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { Modal } from './components/Modal';
 
-// Pages
 import { Dashboard } from './pages/Dashboard';
 import { Agenda } from './pages/Agenda';
 import { OdontogramaPage } from './pages/OdontogramaPage';
@@ -20,9 +19,9 @@ import { ProtesesPage } from './pages/ProtesesPage';
 import { LoginPage } from './pages/LoginPage';
 import { PortalPaciente } from './pages/PortalPaciente';
 
-// Layout com Proteção de Rota
 const ProtectedLayout = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, role } = useAuth();
+  const navigate = useNavigate();
   const [globalPatientModal, setGlobalPatientModal] = useState(false);
 
   if (loading) {
@@ -37,20 +36,23 @@ const ProtectedLayout = ({ children }) => {
     return <Navigate to="/login" replace />;
   }
 
+  if (role === 'paciente') {
+    return <Navigate to="/" replace />;
+  }
+
   return (
     <div className="flex min-h-screen bg-chess-dark">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <Header
           onOpenNewPatient={() => setGlobalPatientModal(true)}
-          onOpenNewAppointment={() => window.location.href = '/agenda'}
+          onOpenNewAppointment={() => navigate('/agenda')}
         />
         <main className="flex-1 p-6 overflow-y-auto">
           {children}
         </main>
       </div>
 
-      {/* Global New Patient Modal */}
       {globalPatientModal && (
         <PacientesPage
           isCreateModalOpen={globalPatientModal}
@@ -82,7 +84,7 @@ export const App = () => {
             />
 
             <Route
-              path="/agenda"
+              path='/agenda'
               element={
                 <ProtectedLayout>
                   <Agenda />

@@ -1,36 +1,36 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { playMoveSound, playCaptureSound, playBlunderSound, playBrilliantSound } from '../utils/audio';
+import { playClickSound, playAlertSound, playErrorSound, playSuccessSound } from '../utils/audio';
 
 const AudioContext = createContext();
 
 export const AudioProvider = ({ children }) => {
   const [soundEnabled, setSoundEnabled] = useState(() => {
-    const saved = localStorage.getItem('odontochess_sound');
+    const saved = localStorage.getItem('odontocheck_sound');
     return saved !== null ? JSON.parse(saved) : true;
   });
 
   useEffect(() => {
-    localStorage.setItem('odontochess_sound', JSON.stringify(soundEnabled));
+    localStorage.setItem('odontocheck_sound', JSON.stringify(soundEnabled));
   }, [soundEnabled]);
 
   const toggleSound = () => {
     setSoundEnabled((prev) => !prev);
   };
 
-  const playMove = () => {
-    if (soundEnabled) playMoveSound();
+  const playClick = () => {
+    if (soundEnabled) playClickSound();
   };
 
-  const playCapture = () => {
-    if (soundEnabled) playCaptureSound();
+  const playAlert = () => {
+    if (soundEnabled) playAlertSound();
   };
 
-  const playBlunder = () => {
-    if (soundEnabled) playBlunderSound();
+  const playError = () => {
+    if (soundEnabled) playErrorSound();
   };
 
-  const playBrilliant = () => {
-    if (soundEnabled) playBrilliantSound();
+  const playSuccess = () => {
+    if (soundEnabled) playSuccessSound();
   };
 
   return (
@@ -38,10 +38,10 @@ export const AudioProvider = ({ children }) => {
       value={{
         soundEnabled,
         toggleSound,
-        playMove,
-        playCapture,
-        playBlunder,
-        playBrilliant,
+        playClick,
+        playAlert,
+        playError,
+        playSuccess,
       }}
     >
       {children}

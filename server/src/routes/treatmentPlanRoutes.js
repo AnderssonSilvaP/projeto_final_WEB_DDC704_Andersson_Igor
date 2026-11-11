@@ -1,5 +1,4 @@
 const express = require('express');
-const router = express.Router();
 const {
   getPlans,
   getPlanById,
@@ -7,17 +6,19 @@ const {
   updatePlanStatus,
   deletePlan,
 } = require('../controllers/treatmentPlanController');
-const { protect } = require('../middleware/authMiddleware');
+const { protect, authorize } = require('../middleware/authMiddleware');
 
-router.use(protect);
+const router = express.Router();
+
+router.use(protect, authorize('admin', 'dentista', 'recepcao'));
 
 router.route('/')
   .get(getPlans)
-  .post(createPlan);
+  .post(authorize('admin', 'dentista'), createPlan);
 
 router.route('/:id')
   .get(getPlanById)
-  .delete(deletePlan);
+  .delete(authorize('admin'), deletePlan);
 
 router.patch('/:id/status', updatePlanStatus);
 

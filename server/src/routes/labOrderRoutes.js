@@ -1,5 +1,4 @@
 const express = require('express');
-const router = express.Router();
 const {
   getLabOrders,
   createLabOrder,
@@ -8,11 +7,13 @@ const {
 } = require('../controllers/labOrderController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
-router.use(protect);
+const router = express.Router();
+
+router.use(protect, authorize('admin', 'dentista', 'recepcao'));
 
 router.route('/')
   .get(getLabOrders)
-  .post(createLabOrder);
+  .post(authorize('admin', 'dentista'), createLabOrder);
 
 router.patch('/:id/status', updateStatus);
 router.delete('/:id', authorize('admin'), deleteLabOrder);

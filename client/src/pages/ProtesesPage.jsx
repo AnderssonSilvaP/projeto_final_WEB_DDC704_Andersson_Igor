@@ -2,25 +2,19 @@ import React, { useState, useEffect } from 'react';
 import {
   Layers,
   Plus,
-  Clock,
-  CheckCircle,
-  Truck,
-  Sparkles,
-  Calendar,
-  DollarSign,
 } from 'lucide-react';
 import { api } from '../services/api';
+import { Spinner } from '../components/Spinner';
 import { Modal } from '../components/Modal';
 import { useAudio } from '../context/AudioContext';
 
 export const ProtesesPage = () => {
-  const { playMove, playCapture, playBrilliant } = useAudio();
+  const { playClick, playSuccess } = useAudio();
   const [orders, setOrders] = useState([]);
   const [patients, setPatients] = useState([]);
   const [statusFilter, setStatusFilter] = useState('todos');
   const [loading, setLoading] = useState(true);
 
-  // Modal Nova OS
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState('');
   const [labName, setLabName] = useState('Laboratório Protético Alpha Precision');
@@ -30,7 +24,6 @@ export const ProtesesPage = () => {
   const [teethNumbers, setTeethNumbers] = useState('11');
   const [dateExpected, setDateExpected] = useState('');
   const [cost, setCost] = useState(420);
-  const [notes, setNotes] = useState('');
 
   const fetchOrders = async () => {
     try {
@@ -57,7 +50,7 @@ export const ProtesesPage = () => {
 
   const handleUpdateStatus = async (orderId, newStatus) => {
     try {
-      playBrilliant();
+      playSuccess();
       await api.patch(`/lab-orders/${orderId}/status`, { status: newStatus });
       fetchOrders();
     } catch (err) {
@@ -68,7 +61,7 @@ export const ProtesesPage = () => {
   const handleCreateOrder = async (e) => {
     e.preventDefault();
     try {
-      playBrilliant();
+      playSuccess();
       const teethArr = teethNumbers ? teethNumbers.split(',').map((t) => Number(t.trim())) : [];
       await api.post('/lab-orders', {
         patient: selectedPatient,
@@ -79,7 +72,6 @@ export const ProtesesPage = () => {
         teethNumbers: teethArr,
         dateExpected,
         cost: Number(cost),
-        notes,
       });
 
       setIsModalOpen(false);
@@ -89,9 +81,10 @@ export const ProtesesPage = () => {
     }
   };
 
+  if (loading) return <Spinner />;
+
   return (
     <div className="space-y-6">
-      {/* Top Bar */}
       <div className="bg-chess-panel border border-chess-border rounded-2xl p-5 shadow-chess-card flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl bg-chess-darker border border-chess-border text-chess-blue">
@@ -106,7 +99,7 @@ export const ProtesesPage = () => {
         </div>
 
         <button
-          onClick={() => { playMove(); setIsModalOpen(true); }}
+          onClick={() => { playClick(); setIsModalOpen(true); }}
           className="px-4 py-2 rounded-xl text-xs font-black chess-btn-green flex items-center gap-2"
         >
           <Plus className="w-4 h-4" />
@@ -114,7 +107,6 @@ export const ProtesesPage = () => {
         </button>
       </div>
 
-      {/* Filter Status */}
       <div className="flex items-center gap-2 bg-chess-darker p-1 rounded-xl border border-chess-border text-xs overflow-x-auto">
         {[
           { id: 'todos', label: 'Todas as Ordens' },
@@ -126,7 +118,7 @@ export const ProtesesPage = () => {
         ].map((s) => (
           <button
             key={s.id}
-            onClick={() => { playMove(); setStatusFilter(s.id); }}
+            onClick={() => { playClick(); setStatusFilter(s.id); }}
             className={`px-3 py-1.5 rounded-lg font-bold capitalize transition-all whitespace-nowrap ${
               statusFilter === s.id
                 ? 'bg-chess-green text-white shadow-chess-btn'
@@ -138,7 +130,6 @@ export const ProtesesPage = () => {
         ))}
       </div>
 
-      {/* Grid de O.S. */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {orders.map((ord) => {
           const statusColors = {
@@ -185,7 +176,6 @@ export const ProtesesPage = () => {
                 </div>
               </div>
 
-              {/* Botões de Ação de Etapa */}
               <div className="pt-2 flex items-center justify-end gap-1.5">
                 {ord.status === 'enviado' && (
                   <button
@@ -225,7 +215,6 @@ export const ProtesesPage = () => {
         })}
       </div>
 
-      {/* Modal Nova OS */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -257,6 +246,23 @@ export const ProtesesPage = () => {
                 className="w-full bg-chess-darker border border-chess-border rounded-lg px-3 py-2 text-sm text-white"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-chess-gray uppercase mb-1">Tipo:</label>
+            <select
+              value={type}
+              onChange={(e) => setType(e.target.value)}
+              className="w-full bg-chess-darker border border-chess-border rounded-lg px-3 py-2 text-sm text-white"
+            >
+              <option value="coroa">Coroa</option>
+              <option value="faceta">Faceta</option>
+              <option value="protese_total">Prótese total</option>
+              <option value="protese_parcial">Prótese parcial</option>
+              <option value="placa_bruxismo">Placa de bruxismo</option>
+              <option value="inlay_onlay">Inlay / Onlay</option>
+              <option value="protocolo_implante">Protocolo sobre implante</option>
+            </select>
           </div>
 
           <div>

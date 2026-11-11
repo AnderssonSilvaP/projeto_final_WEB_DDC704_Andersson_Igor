@@ -15,11 +15,11 @@ const labOrderSchema = new mongoose.Schema(
     labName: {
       type: String,
       required: true,
-      default: 'Laboratório Protético Alpha Precision',
+      default: 'Laboratório Protético Parceiro',
     },
     itemDescription: {
       type: String,
-      required: true, // ex: Coroa Cerâmica E.max Dente 11 com caracterização incisal
+      required: true,
     },
     type: {
       type: String,

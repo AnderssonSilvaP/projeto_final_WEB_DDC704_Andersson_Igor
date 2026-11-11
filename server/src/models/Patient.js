@@ -46,7 +46,7 @@ const patientSchema = new mongoose.Schema(
       zip: { type: String, default: '' },
     },
     healthInsurance: {
-      planName: { type: String, default: 'Particular' }, // 'Particular', 'Uniodonto', 'Bradesco Dental', 'Amil Dental'
+      planName: { type: String, default: 'Particular' },
       cardNumber: { type: String, default: '' },
     },
     emergencyContact: {
@@ -69,11 +69,11 @@ const patientSchema = new mongoose.Schema(
     },
     eloScore: {
       type: Number,
-      default: 1500, // Rating Chess de Higiene e Assiduidade
+      default: 1500,
     },
     chessRank: {
       type: String,
-      default: 'Candidato a Mestre Bucal',
+      default: 'Paciente Novo',
     },
     notes: {
       type: String,

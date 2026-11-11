@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  /* Dark Mode Default (Chess.com Classic Dark) */
+  /* Dark mode defaults */
   --bg-app: #262522;
   --bg-darker: #1e1e1b;
   --bg-darkest: #161512;
@@ -119,7 +119,7 @@
   }
 }
 
-/* Custom Chess Scrollbars */
+/* Scrollbars */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -135,7 +135,7 @@
   background: var(--border-light);
 }
 
-/* Chess-style 3D Button Utility */
+/* 3D button utility */
 .chess-btn-green {
   background-color: var(--accent-primary) !important;
   color: #ffffff !important;

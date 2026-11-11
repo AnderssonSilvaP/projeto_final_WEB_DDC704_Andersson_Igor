@@ -2,13 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Sparkles,
-  Users,
-  Shield,
-  FileSpreadsheet,
   CheckCircle,
-  AlertCircle,
-  Clock,
-  Printer,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { OdontogramView } from '../components/OdontogramView';
@@ -16,14 +10,13 @@ import { useAudio } from '../context/AudioContext';
 
 export const OdontogramaPage = () => {
   const navigate = useNavigate();
-  const { playBrilliant } = useAudio();
+  const { playSuccess } = useAudio();
   const [patients, setPatients] = useState([]);
   const [selectedPatientId, setSelectedPatientId] = useState('');
   const [odontogram, setOdontogram] = useState(null);
   const [loading, setLoading] = useState(true);
   const [savingMessage, setSavingMessage] = useState('');
 
-  // Carregar lista de pacientes
   useEffect(() => {
     const fetchPatients = async () => {
       try {
@@ -39,7 +32,6 @@ export const OdontogramaPage = () => {
     fetchPatients();
   }, []);
 
-  // Carregar Odontograma do paciente selecionado
   const fetchOdontogram = async (patientId) => {
     if (!patientId) return;
     try {
@@ -76,7 +68,7 @@ export const OdontogramaPage = () => {
   const handleGenerateBudget = async () => {
     try {
       const res = await api.post(`/odontogram/patient/${selectedPatientId}/generate-budget`);
-      playBrilliant();
+      playSuccess();
       alert(`Orçamento gerado com sucesso! Total: R$ ${res.treatmentPlan.totalAmount.toFixed(2)}`);
       navigate('/orcamentos');
     } catch (err) {
@@ -88,7 +80,6 @@ export const OdontogramaPage = () => {
 
   return (
     <div className="space-y-6">
-      {/* Patient Selector Bar */}
       <div className="bg-chess-panel border border-chess-border rounded-2xl p-5 shadow-chess-card flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3 w-full md:w-auto">
           <div className="p-2.5 rounded-xl bg-chess-darker border border-chess-border text-chess-green">
@@ -102,7 +93,6 @@ export const OdontogramaPage = () => {
           </div>
         </div>
 
-        {/* Patient Dropdown */}
         <div className="flex items-center gap-3 w-full md:w-auto">
           <label className="text-xs font-bold text-chess-gray uppercase hidden sm:inline">
             Paciente:
@@ -121,7 +111,6 @@ export const OdontogramaPage = () => {
         </div>
       </div>
 
-      {/* Patient Clinical Info Bar */}
       {currentPatient && (
         <div className="bg-chess-darker border border-chess-border rounded-xl p-4 flex flex-wrap items-center justify-between gap-4 text-xs">
           <div className="flex items-center gap-4">
@@ -145,7 +134,7 @@ export const OdontogramaPage = () => {
 
           {currentPatient.allergies?.length > 0 && (
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-chess-red/15 border border-chess-red/30 text-chess-red font-bold">
-              <span>⚠️ Alergias: {currentPatient.allergies.join(', ')}</span>
+              <span>Alergias: {currentPatient.allergies.join(', ')}</span>
             </div>
           )}
 
@@ -158,7 +147,6 @@ export const OdontogramaPage = () => {
         </div>
       )}
 
-      {/* Interactive Odontogram Component */}
       {loading ? (
         <div className="flex items-center justify-center p-12">
           <div className="w-8 h-8 border-4 border-chess-green border-t-transparent rounded-full animate-spin" />

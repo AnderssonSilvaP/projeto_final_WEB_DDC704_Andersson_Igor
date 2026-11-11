@@ -5,33 +5,43 @@ const Supply = require('../models/Supply');
 const LabOrder = require('../models/LabOrder');
 const TreatmentPlan = require('../models/TreatmentPlan');
 
-// @desc    Obter métricas táticas e executivas da clínica odontológica
-// @route   GET /api/dashboard/stats
-// @access  Private
+const OPEN_LAB_STATUSES = ['enviado', 'em_producao', 'prova_agendada', 'ajustes_solicitados'];
+
+// Operational health score on a -5.0 to +10.0 scale, derived from today's completion rate,
+// monthly profitability and stock alerts. The response key keeps the name the client expects.
+const computeEfficiencyScore = ({ todayTotal, completedToday, monthlyRevenue, monthlyExpenses, lowStockCount }) => {
+  let score = 2.0;
+  score += todayTotal > 0 ? (completedToday / todayTotal) * 3.5 : 1.0;
+  if (monthlyRevenue > monthlyExpenses) {
+    score += Math.min(3.5, (monthlyRevenue / (monthlyExpenses || 1)) * 1.5);
+  }
+  if (lowStockCount > 3) score -= 1.5;
+  return Math.min(10.0, Math.max(-5.0, score));
+};
+
 const getExecutiveDashboardStats = async (req, res, next) => {
   try {
-    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    // 1. Consultas de Hoje
-    const todayAppointments = await Appointment.find({ date: today })
-      .populate('patient', 'name phone eloScore')
-      .populate('dentist', 'name specialty')
-      .sort({ timeSlot: 1 });
+    const [todayAppointments, totalPatients, monthlyTransactions, lowStockCount, pendingLabOrders, pendingBudgets] =
+      await Promise.all([
+        Appointment.find({ date: today })
+          .populate('patient', 'name phone eloScore')
+          .populate('dentist', 'name specialty')
+          .sort({ timeSlot: 1 }),
+        Patient.countDocuments({ active: true }),
+        FinancialTransaction.find({ date: { $gte: startOfMonth }, status: 'pago' }),
+        Supply.countDocuments({ $expr: { $lte: ['$currentStock', '$minStock'] } }),
+        LabOrder.countDocuments({ status: { $in: OPEN_LAB_STATUSES } }),
+        TreatmentPlan.countDocuments({ status: 'pendente' }),
+      ]);
 
     const todayTotal = todayAppointments.length;
     const completedToday = todayAppointments.filter((a) => a.status === 'concluido').length;
     const inProgressToday = todayAppointments.filter((a) => a.status === 'em_atendimento').length;
-    const waitingRoomToday = todayAppointments.filter((a) => a.status === 'aguardando');
-
-    // 2. Pacientes
-    const totalPatients = await Patient.countDocuments({ active: true });
-
-    // 3. Financeiro do Mês
-    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-    const monthlyTransactions = await FinancialTransaction.find({
-      date: { $gte: startOfMonth },
-      status: 'pago',
-    });
+    const waitingRoomQueue = todayAppointments.filter((a) => a.status === 'aguardando');
 
     let monthlyRevenue = 0;
     let monthlyExpenses = 0;
@@ -40,34 +50,9 @@ const getExecutiveDashboardStats = async (req, res, next) => {
       else if (t.type === 'despesa') monthlyExpenses += t.amount;
     });
 
-    // 4. Estoque com Alerta
-    const allSupplies = await Supply.find();
-    const lowStockCount = allSupplies.filter((s) => s.currentStock <= s.minStock).length;
-
-    // 5. Próteses Pendentes
-    const pendingLabOrders = await LabOrder.countDocuments({
-      status: { $in: ['enviado', 'em_producao', 'prova_agendada', 'ajustes_solicitados'] },
-    });
-
-    // 6. Orçamentos Pendentes
-    const pendingBudgets = await TreatmentPlan.countDocuments({ status: 'pendente' });
-
-    // 7. Cálculo da "Barra de Avaliação Stockfish" da Clínica (Escala tática de -5.0 a +10.0)
-    // Baseado na taxa de conclusão de hoje, rentabilidade mensal e ausência de rupturas de estoque
-    let evalScore = 2.0; // Início equilibrado
-    if (todayTotal > 0) {
-      evalScore += (completedToday / todayTotal) * 3.5;
-    } else {
-      evalScore += 1.0;
-    }
-    if (monthlyRevenue > monthlyExpenses) {
-      evalScore += Math.min(3.5, (monthlyRevenue / (monthlyExpenses || 1)) * 1.5);
-    }
-    if (lowStockCount > 3) {
-      evalScore -= 1.5; // Penalidade por falta de insumos (blunder operacional)
-    }
-
-    const formattedEval = Math.min(10.0, Math.max(-5.0, evalScore)).toFixed(1);
+    const score = Number(
+      computeEfficiencyScore({ todayTotal, completedToday, monthlyRevenue, monthlyExpenses, lowStockCount }).toFixed(1)
+    );
 
     res.json({
       success: true,
@@ -75,7 +60,7 @@ const getExecutiveDashboardStats = async (req, res, next) => {
         todayTotal,
         completedToday,
         inProgressToday,
-        waitingRoomCount: waitingRoomToday.length,
+        waitingRoomCount: waitingRoomQueue.length,
         totalPatients,
         monthlyRevenue,
         monthlyExpenses,
@@ -83,13 +68,13 @@ const getExecutiveDashboardStats = async (req, res, next) => {
         lowStockCount,
         pendingLabOrders,
         pendingBudgets,
-        stockfishEvaluation: {
-          score: Number(formattedEval),
-          display: formattedEval >= 0 ? `+${formattedEval}` : formattedEval,
-          advantage: formattedEval > 0 ? 'Excelente Eficiência Operacional' : 'Atenção Operacional Necessária',
-          evalBarPercentage: Math.min(100, Math.max(10, ((Number(formattedEval) + 5) / 15) * 100)),
+        efficiency: {
+          score,
+          display: score >= 0 ? `+${score.toFixed(1)}` : score.toFixed(1),
+          advantage: score > 0 ? 'Excelente Eficiência Operacional' : 'Atenção Operacional Necessária',
+          evalBarPercentage: Math.min(100, Math.max(10, ((score + 5) / 15) * 100)),
         },
-        waitingRoomQueue: waitingRoomToday,
+        waitingRoomQueue,
         todayAppointments,
       },
     });

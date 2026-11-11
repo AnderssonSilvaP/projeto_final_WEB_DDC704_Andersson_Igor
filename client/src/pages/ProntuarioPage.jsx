@@ -4,33 +4,28 @@ import {
   AlertTriangle,
   Heart,
   Pill,
-  Award,
   Plus,
-  Clock,
   Printer,
-  Calendar,
-  Image as ImageIcon,
-  CheckCircle,
 } from 'lucide-react';
 import { api } from '../services/api';
+import { Spinner } from '../components/Spinner';
 import { Modal } from '../components/Modal';
 import { useAudio } from '../context/AudioContext';
 
 export const ProntuarioPage = () => {
-  const { playMove, playCapture, playBrilliant } = useAudio();
+  const { playClick, playAlert, playSuccess } = useAudio();
   const [patients, setPatients] = useState([]);
   const [selectedPatientId, setSelectedPatientId] = useState('');
   const [record, setRecord] = useState(null);
-  const [activeTab, setActiveTab] = useState('anamnese'); // 'anamnese' | 'evolucao' | 'receitas' | 'atestados' | 'radiografias'
+  const [activeTab, setActiveTab] = useState('anamnese');
+
   const [loading, setLoading] = useState(true);
 
-  // Modais de Criação
   const [evolutionModal, setEvolutionModal] = useState(false);
   const [prescriptionModal, setPrescriptionModal] = useState(false);
   const [certificateModal, setCertificateModal] = useState(false);
   const [radiographModal, setRadiographModal] = useState(false);
 
-  // Formulários de Novo Registro
   const [newEvolution, setNewEvolution] = useState({
     procedureDescription: '',
     teethInvolved: '',
@@ -62,7 +57,6 @@ export const ProntuarioPage = () => {
     url: 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?auto=format&fit=crop&q=80&w=800',
   });
 
-  // Carregar lista de pacientes
   useEffect(() => {
     const fetchPatients = async () => {
       try {
@@ -97,10 +91,9 @@ export const ProntuarioPage = () => {
     }
   }, [selectedPatientId]);
 
-  // Salvar Anamnese
   const handleUpdateAnamnese = async (updatedAnamnese) => {
     try {
-      playCapture();
+      playAlert();
       const res = await api.put(`/medical-records/patient/${selectedPatientId}/anamnese`, updatedAnamnese);
       setRecord((prev) => ({ ...prev, anamnese: res.anamnese }));
       alert('Anamnese atualizada com sucesso!');
@@ -109,11 +102,10 @@ export const ProntuarioPage = () => {
     }
   };
 
-  // Adicionar Evolução
   const handleAddEvolution = async (e) => {
     e.preventDefault();
     try {
-      playBrilliant();
+      playSuccess();
       const teethArr = newEvolution.teethInvolved
         ? newEvolution.teethInvolved.split(',').map((t) => Number(t.trim()))
         : [];
@@ -129,11 +121,10 @@ export const ProntuarioPage = () => {
     }
   };
 
-  // Adicionar Receita
   const handleAddPrescription = async (e) => {
     e.preventDefault();
     try {
-      playBrilliant();
+      playSuccess();
       await api.post(`/medical-records/patient/${selectedPatientId}/prescriptions`, {
         medications: [
           {
@@ -153,11 +144,10 @@ export const ProntuarioPage = () => {
     }
   };
 
-  // Adicionar Atestado
   const handleAddCertificate = async (e) => {
     e.preventDefault();
     try {
-      playBrilliant();
+      playSuccess();
       await api.post(`/medical-records/patient/${selectedPatientId}/certificates`, newCertificate);
       setCertificateModal(false);
       fetchRecord(selectedPatientId);
@@ -166,11 +156,10 @@ export const ProntuarioPage = () => {
     }
   };
 
-  // Adicionar Radiografia
   const handleAddRadiograph = async (e) => {
     e.preventDefault();
     try {
-      playBrilliant();
+      playSuccess();
       await api.post(`/medical-records/patient/${selectedPatientId}/radiographs`, newRadio);
       setRadiographModal(false);
       fetchRecord(selectedPatientId);
@@ -181,9 +170,10 @@ export const ProntuarioPage = () => {
 
   const currentPatient = patients.find((p) => p._id === selectedPatientId);
 
+  if (loading) return <Spinner />;
+
   return (
     <div className="space-y-6">
-      {/* Top Patient Selector */}
       <div className="bg-chess-panel border border-chess-border rounded-2xl p-5 shadow-chess-card flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl bg-chess-darker border border-chess-border text-chess-gold">
@@ -215,7 +205,6 @@ export const ProntuarioPage = () => {
         </div>
       </div>
 
-      {/* Alerta Médico Crítico do Paciente */}
       {record?.anamnese && (
         <div className="bg-chess-darker border border-chess-border rounded-xl p-4 flex flex-wrap items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-3 text-xs">
@@ -247,7 +236,6 @@ export const ProntuarioPage = () => {
         </div>
       )}
 
-      {/* Tabs de Navegação no PEP */}
       <div className="flex items-center gap-2 border-b border-chess-border pb-2 overflow-x-auto">
         {[
           { id: 'anamnese', label: 'Anamnese Médica' },
@@ -258,7 +246,7 @@ export const ProntuarioPage = () => {
         ].map((tab) => (
           <button
             key={tab.id}
-            onClick={() => { playMove(); setActiveTab(tab.id); }}
+            onClick={() => { playClick(); setActiveTab(tab.id); }}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
               activeTab === tab.id
                 ? 'bg-chess-green text-white shadow-chess-btn'
@@ -270,7 +258,6 @@ export const ProntuarioPage = () => {
         ))}
       </div>
 
-      {/* TAB 1: Anamnese Médica */}
       {activeTab === 'anamnese' && record && (
         <div className="bg-chess-panel border border-chess-border rounded-2xl p-6 shadow-chess-card space-y-6">
           <div className="flex items-center justify-between pb-3 border-b border-chess-border">
@@ -349,13 +336,12 @@ export const ProntuarioPage = () => {
         </div>
       )}
 
-      {/* TAB 2: Evoluções Clínicas */}
       {activeTab === 'evolucao' && record && (
         <div className="bg-chess-panel border border-chess-border rounded-2xl p-6 shadow-chess-card space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-chess-border">
             <h4 className="text-base font-extrabold text-white">Evolução Clínica Diária</h4>
             <button
-              onClick={() => { playMove(); setEvolutionModal(true); }}
+              onClick={() => { playClick(); setEvolutionModal(true); }}
               className="px-3.5 py-1.5 rounded-xl text-xs font-bold chess-btn-green flex items-center gap-1.5"
             >
               <Plus className="w-4 h-4" />
@@ -397,7 +383,6 @@ export const ProntuarioPage = () => {
         </div>
       )}
 
-      {/* TAB 3: Receituário Digital */}
       {activeTab === 'receitas' && record && (
         <div className="bg-chess-panel border border-chess-border rounded-2xl p-6 shadow-chess-card space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-chess-border">
@@ -406,7 +391,7 @@ export const ProntuarioPage = () => {
               <p className="text-xs text-chess-gray">Prescrições emitidas e assinadas digitalmente</p>
             </div>
             <button
-              onClick={() => { playMove(); setPrescriptionModal(true); }}
+              onClick={() => { playClick(); setPrescriptionModal(true); }}
               className="px-3.5 py-1.5 rounded-xl text-xs font-bold chess-btn-green flex items-center gap-1.5"
             >
               <Pill className="w-4 h-4" />
@@ -450,13 +435,12 @@ export const ProntuarioPage = () => {
         </div>
       )}
 
-      {/* TAB 4: Atestados */}
       {activeTab === 'atestados' && record && (
         <div className="bg-chess-panel border border-chess-border rounded-2xl p-6 shadow-chess-card space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-chess-border">
             <h4 className="text-base font-extrabold text-white">Atestados Odontológicos</h4>
             <button
-              onClick={() => { playMove(); setCertificateModal(true); }}
+              onClick={() => { playClick(); setCertificateModal(true); }}
               className="px-3.5 py-1.5 rounded-xl text-xs font-bold chess-btn-green flex items-center gap-1.5"
             >
               <Plus className="w-4 h-4" />
@@ -482,13 +466,12 @@ export const ProntuarioPage = () => {
         </div>
       )}
 
-      {/* TAB 5: Radiografias */}
       {activeTab === 'radiografias' && record && (
         <div className="bg-chess-panel border border-chess-border rounded-2xl p-6 shadow-chess-card space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-chess-border">
             <h4 className="text-base font-extrabold text-white">Galeria de Exames & Radiografias</h4>
             <button
-              onClick={() => { playMove(); setRadiographModal(true); }}
+              onClick={() => { playClick(); setRadiographModal(true); }}
               className="px-3.5 py-1.5 rounded-xl text-xs font-bold chess-btn-green flex items-center gap-1.5"
             >
               <ImageIcon className="w-4 h-4" />
@@ -511,7 +494,6 @@ export const ProntuarioPage = () => {
         </div>
       )}
 
-      {/* Modal Nova Evolução */}
       <Modal
         isOpen={evolutionModal}
         onClose={() => setEvolutionModal(false)}
@@ -565,7 +547,6 @@ export const ProntuarioPage = () => {
         </form>
       </Modal>
 
-      {/* Modal Emitir Receita */}
       <Modal
         isOpen={prescriptionModal}
         onClose={() => setPrescriptionModal(false)}
@@ -625,7 +606,6 @@ export const ProntuarioPage = () => {
         </form>
       </Modal>
 
-      {/* Modal Emitir Atestado */}
       <Modal
         isOpen={certificateModal}
         onClose={() => setCertificateModal(false)}
@@ -675,7 +655,6 @@ export const ProntuarioPage = () => {
         </form>
       </Modal>
 
-      {/* Modal Radiografia */}
       <Modal
         isOpen={radiographModal}
         onClose={() => setRadiographModal(false)}
