@@ -1,167 +1,88 @@
-import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { AudioProvider } from './context/AudioContext';
-import { ThemeProvider } from './context/ThemeContext';
-import { Sidebar } from './components/Sidebar';
-import { Header } from './components/Header';
-import { Modal } from './components/Modal';
+import Navbar from './components/Navbar';
+import Spinner from './components/Spinner';
+import HomePage from './pages/HomePage';
+import LoginPage from './pages/LoginPage';
+import AgendamentosPage from './pages/AgendamentosPage';
+import PacientesPage from './pages/PacientesPage';
+import ProcedimentosPage from './pages/ProcedimentosPage';
+import DashboardPage from './pages/DashboardPage';
 
-import { Dashboard } from './pages/Dashboard';
-import { Agenda } from './pages/Agenda';
-import { OdontogramaPage } from './pages/OdontogramaPage';
-import { ProntuarioPage } from './pages/ProntuarioPage';
-import { PacientesPage } from './pages/PacientesPage';
-import { OrcamentosPage } from './pages/OrcamentosPage';
-import { FinanceiroPage } from './pages/FinanceiroPage';
-import { EstoquePage } from './pages/EstoquePage';
-import { ProtesesPage } from './pages/ProtesesPage';
-import { LoginPage } from './pages/LoginPage';
-import { PortalPaciente } from './pages/PortalPaciente';
-
-const ProtectedLayout = ({ children }) => {
-  const { isAuthenticated, loading, role } = useAuth();
-  const navigate = useNavigate();
-  const [globalPatientModal, setGlobalPatientModal] = useState(false);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-chess-dark flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-chess-green border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (role === 'paciente') {
-    return <Navigate to="/" replace />;
-  }
+function MainLayout() {
+  const { loading } = useAuth();
+  if (loading) return <Spinner label="Carregando sistema..." />;
 
   return (
-    <div className="flex min-h-screen bg-chess-dark">
-      <Sidebar />
-      <div className="flex-1 flex flex-col min-w-0">
-        <Header
-          onOpenNewPatient={() => setGlobalPatientModal(true)}
-          onOpenNewAppointment={() => navigate('/agenda')}
-        />
-        <main className="flex-1 p-6 overflow-y-auto">
-          {children}
-        </main>
-      </div>
-
-      {globalPatientModal && (
-        <PacientesPage
-          isCreateModalOpen={globalPatientModal}
-          onCloseCreateModal={() => setGlobalPatientModal(false)}
-        />
-      )}
+    <div className="min-h-screen bg-slate-50 flex flex-col">
+      <Navbar />
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8">
+        <Outlet />
+      </main>
     </div>
   );
-};
+}
 
-export const App = () => {
+function ProtectedRoute({ children, adminOnly = false }) {
+  const { isAuthenticated, isAdmin, loading } = useAuth();
+  if (loading) return <Spinner label="Verificando sessão..." />;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (adminOnly && !isAdmin) return <Navigate to="/" replace />;
+  return children;
+}
+
+function PublicOnlyRoute({ children }) {
+  const { isAuthenticated, loading } = useAuth();
+  if (loading) return <Spinner label="Verificando sessão..." />;
+  if (isAuthenticated) return <Navigate to="/" replace />;
+  return children;
+}
+
+export default function App() {
   return (
-    <ThemeProvider>
-      <BrowserRouter>
-        <AuthProvider>
-          <AudioProvider>
-            <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/" element={<PortalPaciente />} />
-            <Route path="/portal" element={<PortalPaciente />} />
-
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route
+            path="/login"
+            element={
+              <PublicOnlyRoute>
+                <LoginPage />
+              </PublicOnlyRoute>
+            }
+          />
+          <Route element={<MainLayout />}>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/procedimentos" element={<ProcedimentosPage />} />
             <Route
-              path="/dashboard"
+              path="/agendamentos"
               element={
-                <ProtectedLayout>
-                  <Dashboard />
-                </ProtectedLayout>
+                <ProtectedRoute>
+                  <AgendamentosPage />
+                </ProtectedRoute>
               }
             />
-
-            <Route
-              path='/agenda'
-              element={
-                <ProtectedLayout>
-                  <Agenda />
-                </ProtectedLayout>
-              }
-            />
-
-            <Route
-              path="/odontograma"
-              element={
-                <ProtectedLayout>
-                  <OdontogramaPage />
-                </ProtectedLayout>
-              }
-            />
-
-            <Route
-              path="/prontuario"
-              element={
-                <ProtectedLayout>
-                  <ProntuarioPage />
-                </ProtectedLayout>
-              }
-            />
-
             <Route
               path="/pacientes"
               element={
-                <ProtectedLayout>
+                <ProtectedRoute>
                   <PacientesPage />
-                </ProtectedLayout>
+                </ProtectedRoute>
               }
             />
-
             <Route
-              path="/orcamentos"
+              path="/dashboard"
               element={
-                <ProtectedLayout>
-                  <OrcamentosPage />
-                </ProtectedLayout>
+                <ProtectedRoute adminOnly>
+                  <DashboardPage />
+                </ProtectedRoute>
               }
             />
-
-            <Route
-              path="/financeiro"
-              element={
-                <ProtectedLayout>
-                  <FinanceiroPage />
-                </ProtectedLayout>
-              }
-            />
-
-            <Route
-              path="/estoque"
-              element={
-                <ProtectedLayout>
-                  <EstoquePage />
-                </ProtectedLayout>
-              }
-            />
-
-            <Route
-              path="/proteses"
-              element={
-                <ProtectedLayout>
-                  <ProtesesPage />
-                </ProtectedLayout>
-              }
-            />
-
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </AudioProvider>
-      </AuthProvider>
-    </BrowserRouter>
-  </ThemeProvider>
+          </Route>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
-};
-
-export default App;
+}

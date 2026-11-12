@@ -1,22 +1,14 @@
-const express = require('express');
+const router = require('express').Router();
 const {
   getPatients,
   getPatientById,
   createPatient,
   updatePatient,
   deletePatient,
-  interactiveCheckin,
-  assistantChat,
 } = require('../controllers/patientController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
-const router = express.Router();
-
-// Public: virtual assistant chat and kiosk check-in.
-router.post('/assistant-chat', assistantChat);
-router.post('/interactive-checkin', interactiveCheckin);
-
-router.use(protect, authorize('admin', 'dentista', 'recepcao'));
+router.use(protect);
 
 router.route('/')
   .get(getPatients)

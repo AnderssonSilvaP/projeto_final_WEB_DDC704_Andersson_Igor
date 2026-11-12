@@ -2,15 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { api } from '../services/api';
 
 const AuthContext = createContext(null);
-
 const TOKEN_KEY = 'odontocheck_token';
-
-const DEMO_CREDENTIALS = {
-  admin: { email: 'admin@odontocheck.com', password: 'admin123' },
-  dentista: { email: 'dentista@odontocheck.com', password: 'dentista123' },
-  recepcao: { email: 'recepcao@odontocheck.com', password: 'recepcao123' },
-  paciente: { email: 'paciente@odontocheck.com', password: 'paciente123' },
-};
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -54,15 +46,11 @@ export const AuthProvider = ({ children }) => {
     return res.user;
   };
 
-  const login = async (email, password) => startSession(await api.post('/auth/login', { email, password }));
+  const login = async (email, password) =>
+    startSession(await api.post('/auth/login', { email, password }));
 
-  const register = async (userData) => startSession(await api.post('/auth/register', userData));
-
-  const quickSwitchRole = async (targetRole) => {
-    const creds = DEMO_CREDENTIALS[targetRole];
-    if (creds) return login(creds.email, creds.password);
-    return null;
-  };
+  const register = async (userData) =>
+    startSession(await api.post('/auth/register', userData));
 
   return (
     <AuthContext.Provider
@@ -70,12 +58,12 @@ export const AuthProvider = ({ children }) => {
         user,
         token,
         loading,
-        isAuthenticated: !!user,
+        isAuthenticated: Boolean(user),
+        isAdmin: user?.role === 'admin',
         role: user?.role || null,
         login,
         register,
         logout,
-        quickSwitchRole,
       }}
     >
       {children}

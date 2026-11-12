@@ -1,324 +1,298 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import {
-  Search,
-  Plus,
-  Phone,
-  AlertTriangle,
-  Shield,
-  MessageSquare,
-  Sparkles,
-  FileText,
-} from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Plus, Search, Pencil, Trash2, Phone, Mail } from 'lucide-react';
 import { api } from '../services/api';
-import { Spinner } from '../components/Spinner';
-import { Modal } from '../components/Modal';
-import { useAudio } from '../context/AudioContext';
+import { useAuth } from '../context/AuthContext';
+import Button from '../components/Button';
+import FormField from '../components/FormField';
+import Modal from '../components/Modal';
+import Badge from '../components/Badge';
+import Spinner from '../components/Spinner';
 
-export const PacientesPage = ({ isCreateModalOpen, onCloseCreateModal }) => {
-  const navigate = useNavigate();
-  const { playClick, playSuccess } = useAudio();
+const EMPTY_FORM = {
+  name: '',
+  cpf: '',
+  phone: '',
+  email: '',
+  birthDate: '',
+  healthInsurance: 'Particular',
+  notes: '',
+};
+
+const INSURANCES = ['Particular', 'Uniodonto', 'Bradesco Dental', 'Amil Dental'];
+
+export default function PacientesPage() {
+  const { isAdmin } = useAuth();
   const [patients, setPatients] = useState([]);
-  const [search, setSearch] = useState('');
-  const [insuranceFilter, setInsuranceFilter] = useState('todos');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [search, setSearch] = useState('');
+  const [insurance, setInsurance] = useState('todos');
 
-  const [localModalOpen, setLocalModalOpen] = useState(false);
-  const isModalOpen = isCreateModalOpen !== undefined ? isCreateModalOpen : localModalOpen;
-  const setModalOpen = onCloseCreateModal || setLocalModalOpen;
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [saving, setSaving] = useState(false);
 
-  const [formData, setFormData] = useState({
-    name: '',
-    cpf: '',
-    birthDate: '',
-    phone: '',
-    email: '',
-    planName: 'Particular',
-    allergies: '',
-    chronicConditions: '',
-    notes: '',
-  });
-
-  const fetchPatients = async () => {
+  const loadPatients = useCallback(async () => {
+    setLoading(true);
+    setError('');
     try {
-      setLoading(true);
-      const res = await api.get(`/patients?search=${search}&insurance=${insuranceFilter}`);
+      const params = new URLSearchParams();
+      if (search.trim()) params.set('search', search.trim());
+      if (insurance !== 'todos') params.set('insurance', insurance);
+      const res = await api.get(`/patients?${params.toString()}`);
       setPatients(res.patients || []);
     } catch (err) {
-      console.error('Erro ao buscar pacientes:', err);
+      setError(err.message || 'Erro ao carregar pacientes.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [search, insurance]);
 
   useEffect(() => {
-    fetchPatients();
-  }, [search, insuranceFilter]);
+    loadPatients();
+  }, [loadPatients]);
 
-  const handleCreatePatient = async (e) => {
+  const openCreate = () => {
+    setEditing(null);
+    setForm(EMPTY_FORM);
+    setModalOpen(true);
+  };
+
+  const openEdit = (patient) => {
+    setEditing(patient);
+    setForm({
+      name: patient.name || '',
+      cpf: patient.cpf || '',
+      phone: patient.phone || '',
+      email: patient.email || '',
+      birthDate: patient.birthDate ? String(patient.birthDate).slice(0, 10) : '',
+      healthInsurance: patient.healthInsurance || 'Particular',
+      notes: patient.notes || '',
+    });
+    setModalOpen(true);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setSaving(true);
+    setError('');
     try {
-      playSuccess();
-      const allergiesArr = formData.allergies
-        ? formData.allergies.split(',').map((a) => a.trim())
-        : [];
-      const chronicArr = formData.chronicConditions
-        ? formData.chronicConditions.split(',').map((c) => c.trim())
-        : [];
-
-      await api.post('/patients', {
-        name: formData.name,
-        cpf: formData.cpf,
-        birthDate: formData.birthDate,
-        phone: formData.phone,
-        email: formData.email,
-        healthInsurance: { planName: formData.planName },
-        allergies: allergiesArr,
-        chronicConditions: chronicArr,
-        notes: formData.notes,
-      });
-
-      if (onCloseCreateModal) onCloseCreateModal();
-      else setLocalModalOpen(false);
-
-      setFormData({
-        name: '',
-        cpf: '',
-        birthDate: '',
-        phone: '',
-        email: '',
-        planName: 'Particular',
-        allergies: '',
-        chronicConditions: '',
-        notes: '',
-      });
-
-      fetchPatients();
+      if (editing) {
+        await api.put(`/patients/${editing._id}`, form);
+      } else {
+        await api.post('/patients', form);
+      }
+      setModalOpen(false);
+      await loadPatients();
     } catch (err) {
-      alert(err.message || 'Erro ao cadastrar paciente.');
+      setError(err.message || 'Erro ao salvar paciente.');
+    } finally {
+      setSaving(false);
     }
   };
 
-  if (loading) return <Spinner />;
+  const handleDelete = async (id) => {
+    if (!window.confirm('Deseja realmente excluir este paciente e seus agendamentos?')) return;
+    try {
+      await api.delete(`/patients/${id}`);
+      setPatients((prev) => prev.filter((p) => p._id !== id));
+    } catch (err) {
+      setError(err.message || 'Erro ao excluir paciente.');
+    }
+  };
 
   return (
     <div className="space-y-6">
-      <div className="bg-chess-panel border border-chess-border rounded-2xl p-5 shadow-chess-card flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          <div className="relative flex-1 md:w-80">
-            <Search className="w-4 h-4 absolute left-3 top-3 text-chess-gray" />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900">Pacientes</h1>
+          <p className="text-sm text-slate-500">
+            Cadastro e histórico cadastral dos pacientes da clínica.
+          </p>
+        </div>
+        <Button onClick={openCreate}>
+          <Plus className="w-4 h-4" /> Novo Paciente
+        </Button>
+      </div>
+
+      {error && (
+        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-xs font-medium text-red-700">
+          {error}
+        </div>
+      )}
+
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder="Buscar por nome, CPF ou telefone..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-chess-darker border border-chess-border rounded-xl pl-9 pr-4 py-2 text-sm text-white placeholder-chess-gray focus:outline-none focus:border-chess-green"
+              className="w-full rounded-lg border border-slate-300 pl-9 pr-3.5 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-brand-600 focus:outline-none"
             />
           </div>
-
           <select
-            value={insuranceFilter}
-            onChange={(e) => { playClick(); setInsuranceFilter(e.target.value); }}
-            className="bg-chess-darker border border-chess-border rounded-xl px-3 py-2 text-xs text-white font-bold cursor-pointer"
+            value={insurance}
+            onChange={(e) => setInsurance(e.target.value)}
+            className="rounded-lg border border-slate-300 px-3.5 py-2 text-sm text-slate-700 bg-white focus:border-brand-600 focus:outline-none"
           >
-            <option value="todos">Todos os Convênios</option>
-            <option value="Particular">Particular</option>
-            <option value="Uniodonto">Uniodonto</option>
-            <option value="Bradesco Dental">Bradesco Dental</option>
+            <option value="todos">Todos os convênios</option>
+            {INSURANCES.map((ins) => (
+              <option key={ins} value={ins}>
+                {ins}
+              </option>
+            ))}
           </select>
         </div>
 
-        <button
-          onClick={() => { playClick(); if (onCloseCreateModal) onCloseCreateModal(true); else setLocalModalOpen(true); }}
-          className="px-4 py-2 rounded-xl text-xs font-black chess-btn-green flex items-center gap-2 w-full md:w-auto justify-center"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Cadastrar Novo Paciente</span>
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {patients.map((p) => (
-          <div
-            key={p._id}
-            className="bg-chess-panel border border-chess-border rounded-2xl p-5 shadow-chess-card flex flex-col justify-between hover:border-chess-green/50 transition-all group"
-          >
-            <div>
-              <div className="flex items-start justify-between gap-2 mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-chess-darker border border-chess-border flex items-center justify-center font-bold text-chess-green text-base">
-                    {p.name?.charAt(0)}
-                  </div>
-                  <div>
-                    <h4 className="text-base font-extrabold text-white group-hover:text-chess-green transition-colors">
-                      {p.name}
-                    </h4>
-                    <span className="text-xs text-chess-gray font-mono">{p.cpf}</span>
-                  </div>
-                </div>
-
-                <div className="text-right">
-                  <span className="px-2 py-0.5 rounded text-[10px] font-black bg-chess-green/15 text-chess-green border border-chess-green/30">
-                    Saúde: {p.eloScore || 92}%
-                  </span>
-                  <div className="text-[10px] text-chess-gray mt-0.5">
-                    {p.chessRank || 'Adesão Regular'}
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-1.5 text-xs text-chess-gray py-2 border-y border-chess-border/60 my-2">
-                <div className="flex items-center gap-2">
-                  <Phone className="w-3.5 h-3.5 text-chess-green" />
-                  <span>{p.phone}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Shield className="w-3.5 h-3.5 text-chess-gold" />
-                  <span>Plano: <strong className="text-white">{p.healthInsurance?.planName || 'Particular'}</strong></span>
-                </div>
-                {p.allergies?.length > 0 && (
-                  <div className="flex items-center gap-1.5 text-chess-red font-bold">
-                    <AlertTriangle className="w-3.5 h-3.5" />
-                    <span>Alergias: {p.allergies.join(', ')}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="pt-3 flex items-center justify-between gap-2">
-              <a
-                href={`https://wa.me/55${p.phone?.replace(/\D/g, '')}`}
-                target="_blank"
-                rel="noreferrer"
-                className="p-2 rounded-lg bg-chess-darker text-chess-green hover:bg-chess-dark border border-chess-border"
-                title="Mensagem no WhatsApp"
-              >
-                <MessageSquare className="w-4 h-4" />
-              </a>
-
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={() => { playClick(); navigate('/odontograma'); }}
-                  className="px-2.5 py-1.5 rounded-lg text-xs font-bold chess-btn-dark flex items-center gap-1"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-chess-green" />
-                  <span>Odonto</span>
-                </button>
-                <button
-                  onClick={() => { playClick(); navigate('/prontuario'); }}
-                  className="px-2.5 py-1.5 rounded-lg text-xs font-bold chess-btn-dark flex items-center gap-1"
-                >
-                  <FileText className="w-3.5 h-3.5 text-chess-gold" />
-                  <span>Prontuário</span>
-                </button>
-              </div>
-            </div>
+        {loading ? (
+          <Spinner label="Carregando pacientes..." />
+        ) : patients.length === 0 ? (
+          <div className="py-12 text-center text-sm text-slate-500">
+            Nenhum paciente encontrado.
           </div>
-        ))}
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                  <th className="py-3 px-6">Nome / CPF</th>
+                  <th className="py-3 px-4">Contato</th>
+                  <th className="py-3 px-4">Nascimento</th>
+                  <th className="py-3 px-4">Convênio</th>
+                  <th className="py-3 px-6 text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-sm">
+                {patients.map((patient) => (
+                  <tr key={patient._id} className="hover:bg-slate-50/60 transition-colors">
+                    <td className="py-3.5 px-6">
+                      <div className="font-semibold text-slate-900">{patient.name}</div>
+                      <div className="text-xs text-slate-500">CPF: {patient.cpf}</div>
+                    </td>
+                    <td className="py-3.5 px-4 text-xs text-slate-600 space-y-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <Phone className="w-3.5 h-3.5 text-brand-600" /> {patient.phone}
+                      </div>
+                      {patient.email && (
+                        <div className="flex items-center gap-1.5 text-slate-500">
+                          <Mail className="w-3.5 h-3.5" /> {patient.email}
+                        </div>
+                      )}
+                    </td>
+                    <td className="py-3.5 px-4 text-xs text-slate-600">
+                      {patient.birthDate
+                        ? String(patient.birthDate).slice(0, 10).split('-').reverse().join('/')
+                        : '—'}
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <Badge>{patient.healthInsurance}</Badge>
+                    </td>
+                    <td className="py-3.5 px-6 text-right whitespace-nowrap">
+                      <div className="inline-flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => openEdit(patient)}
+                          title="Editar paciente"
+                          className="p-1.5 rounded-lg text-slate-500 hover:text-brand-600 hover:bg-brand-50 transition-colors"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        {isAdmin && (
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(patient._id)}
+                            title="Excluir paciente (Admin)"
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       <Modal
-        isOpen={isModalOpen}
-        onClose={() => (onCloseCreateModal ? onCloseCreateModal() : setLocalModalOpen(false))}
-        title="Cadastrar Novo Paciente"
-        subtitle="Registro clínico completo no OdontoCheck"
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title={editing ? 'Editar Paciente' : 'Novo Paciente'}
       >
-        <form onSubmit={handleCreatePatient} className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-chess-gray uppercase mb-1">
-              Nome Completo do Paciente:
-            </label>
-            <input
-              type="text"
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <FormField
+            label="Nome completo"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            required
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <FormField
+              label="CPF"
+              placeholder="000.000.000-00"
+              value={form.cpf}
+              onChange={(e) => setForm({ ...form, cpf: e.target.value })}
               required
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full bg-chess-darker border border-chess-border rounded-lg px-3 py-2 text-sm text-white"
+            />
+            <FormField
+              label="Data de nascimento"
+              type="date"
+              value={form.birthDate}
+              onChange={(e) => setForm({ ...form, birthDate: e.target.value })}
+              required
             />
           </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-bold text-chess-gray uppercase mb-1">CPF:</label>
-              <input
-                type="text"
-                required
-                placeholder="000.000.000-00"
-                value={formData.cpf}
-                onChange={(e) => setFormData({ ...formData, cpf: e.target.value })}
-                className="w-full bg-chess-darker border border-chess-border rounded-lg px-3 py-2 text-sm text-white font-mono"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-chess-gray uppercase mb-1">Data Nascimento:</label>
-              <input
-                type="date"
-                required
-                value={formData.birthDate}
-                onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
-                className="w-full bg-chess-darker border border-chess-border rounded-lg px-3 py-2 text-sm text-white"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-bold text-chess-gray uppercase mb-1">Telefone / WhatsApp:</label>
-              <input
-                type="text"
-                required
-                placeholder="(95) 90000-0000"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full bg-chess-darker border border-chess-border rounded-lg px-3 py-2 text-sm text-white"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-chess-gray uppercase mb-1">Plano / Convênio:</label>
-              <select
-                value={formData.planName}
-                onChange={(e) => setFormData({ ...formData, planName: e.target.value })}
-                className="w-full bg-chess-darker border border-chess-border rounded-lg px-3 py-2 text-sm text-white"
-              >
-                <option value="Particular">Particular</option>
-                <option value="Uniodonto">Uniodonto</option>
-                <option value="Bradesco Dental">Bradesco Dental</option>
-                <option value="Amil Dental">Amil Dental</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-chess-gray uppercase mb-1">
-              Alergias Conhecidas (separadas por vírgula):
-            </label>
-            <input
-              type="text"
-              placeholder="Ex: Penicilina, Látex, Dipirona"
-              value={formData.allergies}
-              onChange={(e) => setFormData({ ...formData, allergies: e.target.value })}
-              className="w-full bg-chess-darker border border-chess-border rounded-lg px-3 py-2 text-sm text-chess-red font-bold"
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <FormField
+              label="Telefone / WhatsApp"
+              placeholder="(95) 99100-0000"
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              required
             />
+            <FormField
+              label="Convênio"
+              as="select"
+              value={form.healthInsurance}
+              onChange={(e) => setForm({ ...form, healthInsurance: e.target.value })}
+            >
+              {INSURANCES.map((ins) => (
+                <option key={ins} value={ins}>
+                  {ins}
+                </option>
+              ))}
+            </FormField>
           </div>
-
-          <div>
-            <label className="block text-xs font-bold text-chess-gray uppercase mb-1">
-              Condições Crônicas (Hipertensão, Diabetes...):
-            </label>
-            <input
-              type="text"
-              placeholder="Ex: Hipertensão, Diabetes Tipo 2"
-              value={formData.chronicConditions}
-              onChange={(e) => setFormData({ ...formData, chronicConditions: e.target.value })}
-              className="w-full bg-chess-darker border border-chess-border rounded-lg px-3 py-2 text-sm text-white"
-            />
+          <FormField
+            label="E-mail"
+            type="email"
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+          />
+          <FormField
+            label="Observações clínicas"
+            as="textarea"
+            rows={2}
+            value={form.notes}
+            onChange={(e) => setForm({ ...form, notes: e.target.value })}
+          />
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="secondary" onClick={() => setModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button type="submit" loading={saving}>
+              {editing ? 'Salvar Alterações' : 'Cadastrar Paciente'}
+            </Button>
           </div>
-
-          <button type="submit" className="w-full py-2.5 rounded-xl text-sm font-black chess-btn-green">
-            Cadastrar Paciente
-          </button>
         </form>
       </Modal>
     </div>
   );
-};
+}

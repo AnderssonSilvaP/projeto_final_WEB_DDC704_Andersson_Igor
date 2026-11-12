@@ -1,25 +1,22 @@
-const express = require('express');
+const router = require('express').Router();
 const {
   getAppointments,
-  getTodayAppointments,
+  getOccupiedSlots,
+  getSummary,
   createAppointment,
-  updateStatus,
   updateAppointment,
   deleteAppointment,
 } = require('../controllers/appointmentController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
-const router = express.Router();
+router.use(protect);
 
-router.use(protect, authorize('admin', 'dentista', 'recepcao'));
-
-router.get('/today', getTodayAppointments);
+router.get('/occupied', getOccupiedSlots);
+router.get('/summary', authorize('admin'), getSummary);
 
 router.route('/')
   .get(getAppointments)
   .post(createAppointment);
-
-router.patch('/:id/status', updateStatus);
 
 router.route('/:id')
   .put(updateAppointment)

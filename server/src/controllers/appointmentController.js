@@ -1,231 +1,185 @@
 const Appointment = require('../models/Appointment');
-const FinancialTransaction = require('../models/FinancialTransaction');
 const Patient = require('../models/Patient');
-const {
-  pick,
-  newReceiptNumber,
-  enumValues,
-  isValidId,
-  checkId,
-  sendNotFound,
-  sendBadRequest,
-} = require('./shared');
+const Service = require('../models/Service');
+const { pick, checkId, isValidId } = require('./shared');
 
-const NOT_FOUND = 'Consulta não encontrada';
-const CREATE_FIELDS = [
-  'patient', 'dentist', 'chairNumber', 'date', 'timeSlot', 'procedure',
-  'category', 'durationMinutes', 'price', 'notes',
-];
-const UPDATE_FIELDS = [
-  ...CREATE_FIELDS, 'status', 'paid', 'paymentMethod',
-];
-const INACTIVE_STATUSES = ['cancelado', 'falta'];
-const RECALL_INTERVAL_MS = 180 * 24 * 60 * 60 * 1000;
+const FIELDS = ['patient', 'service', 'dentistName', 'date', 'timeSlot', 'status', 'notes'];
 
-const refId = (value) => (value && typeof value === 'object' && value._id ? String(value._id) : value);
+async function hasConflict({ date, timeSlot, dentistName, excludeId }) {
+  const filter = {
+    date,
+    timeSlot,
+    dentistName,
+    status: { $ne: 'cancelado' },
+  };
+  if (excludeId) filter._id = { $ne: excludeId };
+  return Boolean(await Appointment.findOne(filter));
+}
 
-const readFields = (body, fields) => {
-  const data = pick(body, fields);
-  if (data.patient !== undefined) data.patient = refId(data.patient);
-  if (data.dentist !== undefined) data.dentist = refId(data.dentist);
-  return data;
-};
-
-const populateAppointment = (query) =>
-  query
-    .populate('patient', 'name phone cpf eloScore chessRank')
-    .populate('dentist', 'name specialty cro avatar');
-
-// Returns an error message when the chair or the dentist is already booked at that slot.
-const findConflict = async ({ date, timeSlot, chairNumber, dentist, excludeId }) => {
-  const base = { date, timeSlot, status: { $nin: INACTIVE_STATUSES } };
-  if (excludeId) base._id = { $ne: excludeId };
-
-  if (chairNumber && (await Appointment.exists({ ...base, chairNumber }))) {
-    return `A cadeira #${chairNumber} já possui um agendamento às ${timeSlot} na data informada.`;
-  }
-  if (dentist && (await Appointment.exists({ ...base, dentist }))) {
-    return `O dentista já possui outro procedimento agendado para as ${timeSlot}.`;
-  }
-  return null;
-};
-
-const getAppointments = async (req, res, next) => {
+async function getAppointments(req, res, next) {
   try {
-    const { date, dentist, chair, status } = req.query;
+    const { date, status, dentistName } = req.query;
     const query = {};
-
-    if (date) query.date = String(date);
-    if (dentist) {
-      if (!isValidId(dentist)) return sendBadRequest(res, 'Dentista inválido');
-      query.dentist = dentist;
+    if (typeof date === 'string' && date) query.date = date;
+    if (typeof status === 'string' && status && status !== 'todos') query.status = status;
+    if (typeof dentistName === 'string' && dentistName && dentistName !== 'todos') {
+      query.dentistName = dentistName;
     }
-    if (chair) query.chairNumber = Number(chair);
-    if (status) query.status = String(status);
 
-    const appointments = await populateAppointment(Appointment.find(query)).sort({ date: 1, timeSlot: 1 });
+    const appointments = await Appointment.find(query)
+      .populate('patient', 'name cpf phone healthInsurance')
+      .populate('service', 'name category price durationMinutes')
+      .sort({ date: 1, timeSlot: 1 });
 
-    res.json({ success: true, count: appointments.length, appointments });
-  } catch (error) {
-    next(error);
+    res.json({ success: true, appointments });
+  } catch (err) {
+    next(err);
   }
-};
+}
 
-const getTodayAppointments = async (req, res, next) => {
+async function getOccupiedSlots(req, res, next) {
   try {
-    const today = new Date().toISOString().split('T')[0];
-    const appointments = await populateAppointment(Appointment.find({ date: today })).sort({ timeSlot: 1 });
-
-    res.json({ success: true, count: appointments.length, date: today, appointments });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const createAppointment = async (req, res, next) => {
-  try {
-    const data = readFields(req.body, CREATE_FIELDS);
-    if (!isValidId(data.patient) || !isValidId(data.dentist)) {
-      return sendBadRequest(res, 'Paciente e dentista válidos são obrigatórios.');
+    const { date, dentistName } = req.query;
+    if (typeof date !== 'string' || !date) {
+      return res.json({ success: true, occupiedSlots: [] });
     }
-    data.chairNumber = data.chairNumber || 1;
-
-    const conflict = await findConflict(data);
-    if (conflict) return sendBadRequest(res, conflict);
-
-    const appointment = await Appointment.create({ ...data, status: 'agendado' });
-    const populated = await populateAppointment(Appointment.findById(appointment._id));
-
-    res.status(201).json({
+    const query = { date, status: { $ne: 'cancelado' } };
+    if (typeof dentistName === 'string' && dentistName) {
+      query.dentistName = dentistName;
+    }
+    const items = await Appointment.find(query).select('timeSlot dentistName');
+    res.json({
       success: true,
-      message: 'Consulta agendada com sucesso.',
-      appointment: populated,
+      occupiedSlots: items.map((a) => a.timeSlot),
     });
-  } catch (error) {
-    next(error);
+  } catch (err) {
+    next(err);
   }
-};
+}
 
-const updateStatus = async (req, res, next) => {
+async function getSummary(req, res, next) {
   try {
-    if (!checkId(res, req.params.id, NOT_FOUND)) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const [totalPatients, totalServices, allAppointments, todayAppointments] = await Promise.all([
+      Patient.countDocuments(),
+      Service.countDocuments({ active: true }),
+      Appointment.find().populate('service', 'price'),
+      Appointment.find({ date: today })
+        .populate('patient', 'name phone healthInsurance')
+        .populate('service', 'name category price durationMinutes')
+        .sort({ timeSlot: 1 }),
+    ]);
 
-    const { status, paymentMethod, paid } = req.body;
-    if (!enumValues(Appointment, 'status').includes(status)) {
-      return sendBadRequest(res, 'Status inválido.');
-    }
-
-    const appointment = await Appointment.findById(req.params.id).populate('patient').populate('dentist');
-    if (!appointment) return sendNotFound(res, NOT_FOUND);
-
-    const wasCompleted = appointment.status === 'concluido';
-    appointment.status = status;
-
-    if (status === 'aguardando') {
-      appointment.waitingRoomArrivedAt = new Date();
-    } else if (status === 'em_atendimento') {
-      appointment.serviceStartedAt = new Date();
-    } else if (status === 'concluido') {
-      appointment.serviceFinishedAt = new Date();
-      if (paid !== undefined) appointment.paid = Boolean(paid);
-      if (paymentMethod) appointment.paymentMethod = paymentMethod;
-    }
-
-    await appointment.save();
-
-    if (status === 'concluido' && !wasCompleted) {
-      await Patient.findByIdAndUpdate(appointment.patient._id, {
-        lastVisit: new Date(),
-        nextRecallDate: new Date(Date.now() + RECALL_INTERVAL_MS),
-        $inc: { eloScore: 25 },
-      });
-
-      if (appointment.paid) {
-        const rate = appointment.dentist.commissionRate || 50;
-        await FinancialTransaction.create({
-          type: 'receita',
-          category: 'consulta',
-          description: `Procedimento: ${appointment.procedure} - Paciente: ${appointment.patient.name}`,
-          amount: appointment.price,
-          paymentMethod: appointment.paymentMethod === 'pendente' ? 'pix' : appointment.paymentMethod,
-          status: 'pago',
-          patient: appointment.patient._id,
-          dentist: appointment.dentist._id,
-          commission: {
-            dentist: appointment.dentist._id,
-            percentage: rate,
-            amount: (appointment.price * rate) / 100,
-            isPaid: false,
-          },
-          receiptNumber: newReceiptNumber(),
-        });
-      }
-    }
+    const activeAppointments = allAppointments.filter((a) => a.status !== 'cancelado');
+    const completedAppointments = allAppointments.filter((a) => a.status === 'concluido');
+    const estimatedRevenue = activeAppointments.reduce(
+      (sum, a) => sum + (a.service?.price || 0),
+      0
+    );
 
     res.json({
       success: true,
-      message: `Status da consulta alterado para: '${status}'.`,
-      appointment,
+      summary: {
+        totalPatients,
+        totalServices,
+        totalAppointments: activeAppointments.length,
+        completedCount: completedAppointments.length,
+        todayCount: todayAppointments.filter((a) => a.status !== 'cancelado').length,
+        estimatedRevenue,
+        todayAppointments,
+      },
     });
-  } catch (error) {
-    next(error);
+  } catch (err) {
+    next(err);
   }
-};
+}
 
-const updateAppointment = async (req, res, next) => {
+async function createAppointment(req, res, next) {
   try {
-    if (!checkId(res, req.params.id, NOT_FOUND)) return;
+    const data = pick(req.body, FIELDS);
+    if (!isValidId(data.patient)) {
+      return res.status(400).json({ success: false, message: 'Selecione um paciente válido.' });
+    }
+    if (!isValidId(data.service)) {
+      return res.status(400).json({ success: false, message: 'Selecione um procedimento válido.' });
+    }
 
+    if (await hasConflict(data)) {
+      return res.status(409).json({
+        success: false,
+        message: 'Este horário já está ocupado para o profissional selecionado.',
+      });
+    }
+
+    const created = await Appointment.create(data);
+    const appointment = await Appointment.findById(created._id)
+      .populate('patient', 'name cpf phone healthInsurance')
+      .populate('service', 'name category price durationMinutes');
+
+    res.status(201).json({ success: true, appointment });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function updateAppointment(req, res, next) {
+  try {
+    if (!checkId(res, req.params.id, 'Agendamento não encontrado.')) return;
     const current = await Appointment.findById(req.params.id);
-    if (!current) return sendNotFound(res, NOT_FOUND);
-
-    const changes = readFields(req.body, UPDATE_FIELDS);
-    const merged = { ...current.toObject(), ...changes };
-
-    const reschedules = ['date', 'timeSlot', 'chairNumber', 'dentist'].some((f) => changes[f] !== undefined);
-    if (reschedules && !INACTIVE_STATUSES.includes(merged.status)) {
-      const conflict = await findConflict({
-        date: merged.date,
-        timeSlot: merged.timeSlot,
-        chairNumber: merged.chairNumber,
-        dentist: merged.dentist,
-        excludeId: current._id,
-      });
-      if (conflict) return sendBadRequest(res, conflict);
+    if (!current) {
+      return res.status(404).json({ success: false, message: 'Agendamento não encontrado.' });
     }
 
-    current.set(changes);
-    await current.save();
-    const appointment = await populateAppointment(Appointment.findById(current._id));
+    const data = pick(req.body, FIELDS);
+    const nextDate = data.date || current.date;
+    const nextSlot = data.timeSlot || current.timeSlot;
+    const nextDentist = data.dentistName || current.dentistName;
 
-    res.json({
-      success: true,
-      message: 'Consulta atualizada com sucesso.',
-      appointment,
-    });
-  } catch (error) {
-    next(error);
+    if (
+      await hasConflict({
+        date: nextDate,
+        timeSlot: nextSlot,
+        dentistName: nextDentist,
+        excludeId: current._id,
+      })
+    ) {
+      return res.status(409).json({
+        success: false,
+        message: 'Este horário já está ocupado para o profissional selecionado.',
+      });
+    }
+
+    const appointment = await Appointment.findByIdAndUpdate(req.params.id, data, {
+      new: true,
+      runValidators: true,
+    })
+      .populate('patient', 'name cpf phone healthInsurance')
+      .populate('service', 'name category price durationMinutes');
+
+    res.json({ success: true, appointment });
+  } catch (err) {
+    next(err);
   }
-};
+}
 
-const deleteAppointment = async (req, res, next) => {
+async function deleteAppointment(req, res, next) {
   try {
-    if (!checkId(res, req.params.id, NOT_FOUND)) return;
-
+    if (!checkId(res, req.params.id, 'Agendamento não encontrado.')) return;
     const appointment = await Appointment.findByIdAndDelete(req.params.id);
-    if (!appointment) return sendNotFound(res, NOT_FOUND);
-
-    res.json({ success: true, message: 'Consulta removida da agenda.' });
-  } catch (error) {
-    next(error);
+    if (!appointment) {
+      return res.status(404).json({ success: false, message: 'Agendamento não encontrado.' });
+    }
+    res.json({ success: true, message: 'Agendamento excluído com sucesso.' });
+  } catch (err) {
+    next(err);
   }
-};
+}
 
 module.exports = {
   getAppointments,
-  getTodayAppointments,
+  getOccupiedSlots,
+  getSummary,
   createAppointment,
-  updateStatus,
   updateAppointment,
   deleteAppointment,
 };

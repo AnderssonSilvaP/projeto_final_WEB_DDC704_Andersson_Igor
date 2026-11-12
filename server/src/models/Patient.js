@@ -13,88 +13,33 @@ const patientSchema = new mongoose.Schema(
       unique: true,
       trim: true,
     },
-    rg: {
-      type: String,
-      trim: true,
-    },
-    birthDate: {
-      type: Date,
-      required: [true, 'Data de nascimento é obrigatória'],
-    },
-    gender: {
-      type: String,
-      enum: ['M', 'F', 'Outro'],
-      default: 'M',
-    },
     phone: {
       type: String,
-      required: [true, 'Telefone de contato é obrigatório'],
+      required: [true, 'Telefone é obrigatório'],
       trim: true,
     },
     email: {
       type: String,
       lowercase: true,
       trim: true,
+      default: '',
     },
-    address: {
-      street: { type: String, default: '' },
-      number: { type: String, default: '' },
-      complement: { type: String, default: '' },
-      neighborhood: { type: String, default: '' },
-      city: { type: String, default: 'Boa Vista' },
-      state: { type: String, default: 'RR' },
-      zip: { type: String, default: '' },
+    birthDate: {
+      type: Date,
+      required: [true, 'Data de nascimento é obrigatória'],
     },
     healthInsurance: {
-      planName: { type: String, default: 'Particular' },
-      cardNumber: { type: String, default: '' },
-    },
-    emergencyContact: {
-      name: { type: String, default: '' },
-      phone: { type: String, default: '' },
-      relationship: { type: String, default: '' },
-    },
-    bloodType: {
       type: String,
-      enum: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'Não informado'],
-      default: 'Não informado',
-    },
-    allergies: {
-      type: [String],
-      default: [],
-    },
-    chronicConditions: {
-      type: [String],
-      default: [],
-    },
-    eloScore: {
-      type: Number,
-      default: 1500,
-    },
-    chessRank: {
-      type: String,
-      default: 'Paciente Novo',
+      enum: ['Particular', 'Uniodonto', 'Bradesco Dental', 'Amil Dental'],
+      default: 'Particular',
     },
     notes: {
       type: String,
+      trim: true,
       default: '',
     },
-    lastVisit: {
-      type: Date,
-    },
-    nextRecallDate: {
-      type: Date,
-    },
-    active: {
-      type: Boolean,
-      default: true,
-    },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
-
-patientSchema.index({ name: 'text', cpf: 'text', phone: 'text' });
 
 module.exports = mongoose.model('Patient', patientSchema);

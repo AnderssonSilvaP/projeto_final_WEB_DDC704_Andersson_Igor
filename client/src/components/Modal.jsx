@@ -1,50 +1,24 @@
-import React, { useEffect } from 'react';
-import {
-  X,
-} from 'lucide-react';
-import { useAudio } from '../context/AudioContext';
+import React from 'react';
+import { X } from 'lucide-react';
 
-export const Modal = ({ isOpen, onClose, title, subtitle, children, maxWidth = 'max-w-xl' }) => {
-  const { playClick } = useAudio();
-
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') onClose();
-    };
-    if (isOpen) {
-      window.addEventListener('keydown', handleKeyDown);
-    }
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
-
+export default function Modal({ isOpen, onClose, title, children }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
-      <div
-        className={`bg-chess-dark border border-chess-border rounded-2xl w-full ${maxWidth} shadow-2xl overflow-hidden flex flex-col max-h-[90vh]`}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="px-6 py-4 border-b border-chess-border bg-chess-panel flex items-center justify-between">
-          <div>
-            <h3 className="text-base font-extrabold text-white">{title}</h3>
-            {subtitle && <p className="text-xs text-chess-gray font-medium">{subtitle}</p>}
-          </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-[2px]">
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <h3 className="text-base font-bold text-slate-900">{title}</h3>
           <button
-            onClick={() => {
-              playClick();
-              onClose();
-            }}
-            className="p-1.5 rounded-lg text-chess-gray hover:text-white hover:bg-chess-dark transition-colors"
+            type="button"
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
-
-        <div className="p-6 overflow-y-auto space-y-4">
-          {children}
-        </div>
+        <div className="p-6 overflow-y-auto">{children}</div>
       </div>
     </div>
   );
-};
+}
