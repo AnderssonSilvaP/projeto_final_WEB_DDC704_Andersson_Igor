@@ -9,11 +9,15 @@ const Appointment = require('../models/Appointment');
 async function seed() {
   await connectDB();
 
-  const force = process.argv.includes('--force') || process.argv.includes('--reset');
+  const force =
+    process.argv.includes('--force') ||
+    process.argv.includes('--reset') ||
+    process.env.FORCE_SEED === 'true';
   const hasAdmin = await User.exists({ email: 'admin@odontocheck.com' });
+  const hasMedico = await User.exists({ email: 'medico@odontocheck.com' });
   const hasServices = (await Service.countDocuments()) > 0;
 
-  if (hasAdmin && hasServices && !force) {
+  if (hasAdmin && hasMedico && hasServices && !force) {
     console.log('Seed já aplicado. Use --force para recriar.');
     await mongoose.disconnect();
     return;
@@ -26,13 +30,40 @@ async function seed() {
     Appointment.deleteMany({}),
   ]);
 
-  await User.create([
+  const users = await User.create([
     {
-      name: 'Dr. Roberto Silveira',
+      name: 'Helena Vasconcelos',
       email: 'admin@odontocheck.com',
       password: 'admin123',
       role: 'admin',
+      phone: '(95) 99110-1000',
+    },
+    {
+      name: 'Dr. Roberto Silveira',
+      email: 'medico@odontocheck.com',
+      password: 'medico123',
+      role: 'medico',
       phone: '(95) 99112-3400',
+      specialty: 'Implantodontia e Clínica Geral',
+      cro: 'CRO-RR 1420',
+    },
+    {
+      name: 'Dra. Mariana Costa',
+      email: 'mariana@odontocheck.com',
+      password: 'medico123',
+      role: 'medico',
+      phone: '(95) 99115-8800',
+      specialty: 'Ortodontia e Estética',
+      cro: 'CRO-RR 1895',
+    },
+    {
+      name: 'Dr. Carlos Fontes',
+      email: 'carlos@odontocheck.com',
+      password: 'medico123',
+      role: 'medico',
+      phone: '(95) 99118-4200',
+      specialty: 'Endodontia e Cirurgia',
+      cro: 'CRO-RR 2110',
     },
     {
       name: 'Carlos Eduardo Silva',
@@ -42,6 +73,8 @@ async function seed() {
       phone: '(95) 99123-4567',
     },
   ]);
+
+  const pacienteUser = users.find((u) => u.email === 'paciente@odontocheck.com');
 
   const services = await Service.insertMany([
     {
@@ -90,13 +123,15 @@ async function seed() {
 
   const patients = await Patient.insertMany([
     {
+      user: pacienteUser._id,
       name: 'Carlos Eduardo Silva',
       cpf: '412.890.123-44',
       phone: '(95) 99123-4567',
       email: 'paciente@odontocheck.com',
       birthDate: new Date('1992-05-14'),
       healthInsurance: 'Uniodonto',
-      notes: 'Revisão semestral.',
+      allergies: 'Dipirona sódica',
+      notes: 'Paciente em acompanhamento semestral de profilaxia. Boa higiene bucal.',
     },
     {
       name: 'Fernanda Oliveira Lima',
@@ -105,7 +140,8 @@ async function seed() {
       email: 'fernanda.lima@email.com',
       birthDate: new Date('1988-11-23'),
       healthInsurance: 'Particular',
-      notes: 'Sensibilidade a bebidas geladas.',
+      allergies: 'Nenhuma alergia relatada',
+      notes: 'Sensibilidade dentinária em pré-molares superiores.',
     },
     {
       name: 'Gabriel Souza Nascimento',
@@ -114,7 +150,8 @@ async function seed() {
       email: 'gabriel.souza@email.com',
       birthDate: new Date('1999-02-08'),
       healthInsurance: 'Bradesco Dental',
-      notes: 'Acompanhamento de aparelho ortodôntico.',
+      allergies: 'Látex (usar luvas nitrílicas)',
+      notes: 'Acompanhamento de aparelho ortodôntico autoligado.',
     },
     {
       name: 'Juliana Martins Rocha',
@@ -123,13 +160,26 @@ async function seed() {
       email: 'juliana.rocha@email.com',
       birthDate: new Date('1985-08-30'),
       healthInsurance: 'Amil Dental',
-      notes: '',
+      allergies: 'Penicilina / Amoxicilina',
+      notes: 'Histórico de clareamento dental realizado sem intercorrências.',
     },
   ]);
 
   const today = new Date().toISOString().slice(0, 10);
+  const pastDate = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
   await Appointment.insertMany([
+    {
+      patient: patients[0]._id,
+      service: services[0]._id,
+      dentistName: 'Dr. Roberto Silveira',
+      date: pastDate,
+      timeSlot: '08:00',
+      status: 'concluido',
+      notes: 'Check-up inicial.',
+      clinicalNotes: 'Exame clínico e radiográfico periapical sem cáries ativas. Leve cálculo supragengival em incisivos inferiores.',
+      recommendations: 'Utilizar escova de cerdas macias, fio dental diariamente e retornar para profilaxia com ultrassom.',
+    },
     {
       patient: patients[0]._id,
       service: services[1]._id,
@@ -138,6 +188,8 @@ async function seed() {
       timeSlot: '09:00',
       status: 'confirmado',
       notes: 'Profilaxia semestral.',
+      clinicalNotes: '',
+      recommendations: '',
     },
     {
       patient: patients[1]._id,
@@ -146,7 +198,9 @@ async function seed() {
       date: today,
       timeSlot: '10:00',
       status: 'agendado',
-      notes: 'Primeira avaliação.',
+      notes: 'Primeira avaliação e queixa de sensibilidade.',
+      clinicalNotes: '',
+      recommendations: '',
     },
     {
       patient: patients[2]._id,
@@ -156,6 +210,8 @@ async function seed() {
       timeSlot: '14:00',
       status: 'confirmado',
       notes: 'Manutenção mensal.',
+      clinicalNotes: '',
+      recommendations: '',
     },
     {
       patient: patients[3]._id,
@@ -165,6 +221,8 @@ async function seed() {
       timeSlot: '16:00',
       status: 'concluido',
       notes: 'Primeira sessão realizada.',
+      clinicalNotes: 'Aplicação de barreira gengival fotopolimerizável e 2 sessões de 15 min de peróxido de hidrogênio 35%.',
+      recommendations: 'Evitar alimentos e bebidas com corantes fortes (café, vinho, açaí) pelas próximas 48 horas. Usar creme dental dessensibilizante.',
     },
   ]);
 

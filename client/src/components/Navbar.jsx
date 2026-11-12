@@ -4,6 +4,7 @@ import {
   Home,
   Calendar,
   Users,
+  UserCheck,
   Stethoscope,
   LayoutDashboard,
   LogOut,
@@ -17,16 +18,37 @@ import Badge from './Badge';
 import Button from './Button';
 
 export default function Navbar() {
-  const { user, isAuthenticated, isAdmin, logout } = useAuth();
+  const { user, isAuthenticated, isAdmin, isMedico, isPaciente, logout } = useAuth();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const links = [
     { to: '/', label: 'Início', icon: Home, end: true },
-    { to: '/agendamentos', label: 'Agendamentos', icon: Calendar },
-    { to: '/pacientes', label: 'Pacientes', icon: Users },
+    ...(isAuthenticated
+      ? [
+          {
+            to: '/agendamentos',
+            label: isMedico ? 'Minha Agenda' : isPaciente ? 'Minhas Consultas' : 'Agendamentos',
+            icon: Calendar,
+          },
+        ]
+      : []),
+    ...(isPaciente
+      ? [{ to: '/minha-ficha', label: 'Minha Ficha', icon: UserCheck }]
+      : []),
+    ...(isAdmin || isMedico
+      ? [
+          {
+            to: '/pacientes',
+            label: isMedico ? 'Prontuários' : 'Pacientes',
+            icon: Users,
+          },
+        ]
+      : []),
     { to: '/procedimentos', label: 'Procedimentos', icon: Stethoscope },
-    ...(isAdmin ? [{ to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard }] : []),
+    ...(isAdmin
+      ? [{ to: '/dashboard', label: 'Relatórios', icon: LayoutDashboard }]
+      : []),
   ];
 
   const linkClass = ({ isActive }) =>

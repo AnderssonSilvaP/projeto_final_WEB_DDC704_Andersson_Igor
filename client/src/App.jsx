@@ -7,6 +7,7 @@ import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import AgendamentosPage from './pages/AgendamentosPage';
 import PacientesPage from './pages/PacientesPage';
+import MinhaFichaPage from './pages/MinhaFichaPage';
 import ProcedimentosPage from './pages/ProcedimentosPage';
 import DashboardPage from './pages/DashboardPage';
 
@@ -24,11 +25,16 @@ function MainLayout() {
   );
 }
 
-function ProtectedRoute({ children, adminOnly = false }) {
-  const { isAuthenticated, isAdmin, loading } = useAuth();
+function ProtectedRoute({ children, roles = [] }) {
+  const { isAuthenticated, role, loading } = useAuth();
   if (loading) return <Spinner label="Verificando sessão..." />;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  if (adminOnly && !isAdmin) return <Navigate to="/" replace />;
+  if (roles.length > 0 && !roles.includes(role)) {
+    if (role === 'paciente' && roles.includes('medico')) {
+      return <Navigate to="/minha-ficha" replace />;
+    }
+    return <Navigate to="/" replace />;
+  }
   return children;
 }
 
@@ -58,15 +64,23 @@ export default function App() {
             <Route
               path="/agendamentos"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute roles={['admin', 'medico', 'paciente']}>
                   <AgendamentosPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/minha-ficha"
+              element={
+                <ProtectedRoute roles={['paciente']}>
+                  <MinhaFichaPage />
                 </ProtectedRoute>
               }
             />
             <Route
               path="/pacientes"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute roles={['admin', 'medico']}>
                   <PacientesPage />
                 </ProtectedRoute>
               }
@@ -74,7 +88,7 @@ export default function App() {
             <Route
               path="/dashboard"
               element={
-                <ProtectedRoute adminOnly>
+                <ProtectedRoute roles={['admin']}>
                   <DashboardPage />
                 </ProtectedRoute>
               }

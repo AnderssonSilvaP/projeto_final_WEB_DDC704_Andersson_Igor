@@ -37,25 +37,26 @@ Variáveis de ambiente (`server/.env`):
 
 ## Contas de demonstração
 
-| Perfil   | E-mail                      | Senha         | Permissões                                                  |
-| -------- | --------------------------- | ------------- | ----------------------------------------------------------- |
-| Admin    | `admin@odontocheck.com`     | `admin123`    | Acesso ao Dashboard, criação de procedimentos e exclusões   |
-| Paciente | `paciente@odontocheck.com`  | `paciente123` | Agendamento de consultas, visualização e cadastro cadastral |
+| Perfil   | E-mail                      | Senha         | Permissões                                                                                     |
+| -------- | --------------------------- | ------------- | ---------------------------------------------------------------------------------------------- |
+| Admin    | `admin@odontocheck.com`     | `admin123`    | Acesso aos Relatórios Gerenciais (`/dashboard`), gestão de procedimentos, pacientes e agenda   |
+| Médico   | `medico@odontocheck.com`    | `medico123`    | Acesso exclusivo à própria agenda clínica, registro de evolução/recomendações e prontuários    |
+| Paciente | `paciente@odontocheck.com`  | `paciente123` | Agendamento exclusivo para si mesmo, acompanhamento das próprias consultas e Minha Ficha       |
 
 ## Estrutura
 
 ```
 server/src/
   config/       Conexão com MongoDB e configuração JWT
-  models/       User, Patient, Service, Appointment
-  controllers/  Regras de negócio e validações
-  routes/       Rotas RESTful da API
+  models/       User (admin, medico, paciente), Patient, Service, Appointment
+  controllers/  Regras de negócio, isolamento por perfil e relatórios gerenciais
+  routes/       Rotas RESTful da API protegidas por RBAC
   middleware/   Autenticação JWT (protect), RBAC (authorize) e tratamento de erros
   scripts/      Script de seed inicial
 
 client/src/
-  components/   Navbar, BookingSteps, Modal, FormField, Button, Badge, StatCard, Spinner
-  context/      AuthContext (estado do usuário autenticado e perfil)
-  pages/        LoginPage, AgendamentosPage, PacientesPage, ProcedimentosPage, DashboardPage
+  components/   Navbar, BookingSteps, ClinicalAttendanceModal, PatientHistoryModal, PatientClinicalCard, AdminReportsPanel, Modal, FormField, Button, Badge, StatCard, Spinner
+  context/      AuthContext (estado do usuário autenticado e perfil RBAC)
+  pages/        LoginPage, AgendamentosPage, PacientesPage, MinhaFichaPage, ProcedimentosPage, DashboardPage
   services/     Cliente HTTP (fetch) com envio automático do token Bearer
 ```

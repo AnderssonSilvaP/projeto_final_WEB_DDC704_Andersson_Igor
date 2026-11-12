@@ -37,6 +37,16 @@ const appointmentSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
+    clinicalNotes: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    recommendations: {
+      type: String,
+      trim: true,
+      default: '',
+    },
   },
   { timestamps: true }
 );

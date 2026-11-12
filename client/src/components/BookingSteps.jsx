@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Check, Clock, Calendar as CalendarIcon, UserCheck, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Check, Clock, UserCheck, ChevronRight, ChevronLeft, ShieldAlert, User } from 'lucide-react';
 import { api } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import Button from './Button';
 import FormField from './FormField';
+import Badge from './Badge';
 
 export const DENTISTS = [
   'Dr. Roberto Silveira',
@@ -28,10 +30,13 @@ export default function BookingSteps({
   onSuccess,
   onCancel,
 }) {
+  const { user, isPaciente, isMedico } = useAuth();
   const today = new Date().toISOString().slice(0, 10);
   const [step, setStep] = useState(initialServiceId ? 2 : 1);
   const [serviceId, setServiceId] = useState(initialServiceId);
-  const [dentistName, setDentistName] = useState(DENTISTS[0]);
+  const [dentistName, setDentistName] = useState(
+    isMedico && user?.name ? user.name : DENTISTS[0]
+  );
   const [date, setDate] = useState(today);
   const [timeSlot, setTimeSlot] = useState('');
   const [patientId, setPatientId] = useState(patients[0]?._id || '');
@@ -42,10 +47,16 @@ export default function BookingSteps({
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!patientId && patients.length > 0) {
+    if (isMedico && user?.name) {
+      setDentistName(user.name);
+    }
+  }, [isMedico, user]);
+
+  useEffect(() => {
+    if (patients.length > 0 && (!patientId || isPaciente)) {
       setPatientId(patients[0]._id);
     }
-  }, [patients, patientId]);
+  }, [patients, patientId, isPaciente]);
 
   useEffect(() => {
     if (!date || !dentistName) return;
@@ -103,8 +114,10 @@ export default function BookingSteps({
   const steps = [
     { num: 1, title: 'Procedimento' },
     { num: 2, title: 'Data e Horário' },
-    { num: 3, title: 'Paciente' },
+    { num: 3, title: isPaciente ? 'Confirmação' : 'Paciente' },
   ];
+
+  const ownPatient = patients[0] || null;
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -227,6 +240,7 @@ export default function BookingSteps({
                 label="Cirurgião-Dentista"
                 as="select"
                 value={dentistName}
+                disabled={isMedico}
                 onChange={(e) => setDentistName(e.target.value)}
               >
                 {DENTISTS.map((d) => (
@@ -307,22 +321,46 @@ export default function BookingSteps({
               </div>
             </div>
 
-            <FormField
-              label="Paciente"
-              as="select"
-              value={patientId}
-              onChange={(e) => setPatientId(e.target.value)}
-              required
-            >
-              {patients.length === 0 && (
-                <option value="">Cadastre um paciente na aba Pacientes primeiro</option>
-              )}
-              {patients.map((p) => (
-                <option key={p._id} value={p._id}>
-                  {p.name} — CPF: {p.cpf} ({p.healthInsurance})
-                </option>
-              ))}
-            </FormField>
+            {isPaciente ? (
+              <div className="rounded-xl bg-brand-50/50 border border-brand-200 p-4 flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-brand-600 text-white flex items-center justify-center shrink-0 mt-0.5">
+                    <User className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-brand-700 block">
+                      Agendamento pessoal (titular da conta)
+                    </span>
+                    <p className="text-sm font-bold text-slate-900 mt-0.5">
+                      {ownPatient?.name || user?.name}
+                    </p>
+                    <p className="text-xs text-slate-600 mt-0.5">
+                      CPF: {ownPatient?.cpf || 'Não informado'} • Telefone: {ownPatient?.phone || user?.phone || '—'}
+                    </p>
+                  </div>
+                </div>
+                {ownPatient?.healthInsurance && (
+                  <Badge>{ownPatient.healthInsurance}</Badge>
+                )}
+              </div>
+            ) : (
+              <FormField
+                label="Paciente"
+                as="select"
+                value={patientId}
+                onChange={(e) => setPatientId(e.target.value)}
+                required
+              >
+                {patients.length === 0 && (
+                  <option value="">Cadastre um paciente na aba Pacientes primeiro</option>
+                )}
+                {patients.map((p) => (
+                  <option key={p._id} value={p._id}>
+                    {p.name} — CPF: {p.cpf} ({p.healthInsurance})
+                  </option>
+                ))}
+              </FormField>
+            )}
 
             <FormField
               label="Observações ou queixa principal (opcional)"

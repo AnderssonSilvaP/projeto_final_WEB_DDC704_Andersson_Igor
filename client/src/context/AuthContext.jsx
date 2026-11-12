@@ -54,6 +54,16 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) =>
     startSession(await api.post('/auth/register', userData));
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const res = await api.get('/auth/me');
+      setUser(res.user);
+      return res.user;
+    } catch {
+      return null;
+    }
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -62,10 +72,13 @@ export const AuthProvider = ({ children }) => {
         loading,
         isAuthenticated: Boolean(user),
         isAdmin: user?.role === 'admin',
+        isMedico: user?.role === 'medico',
+        isPaciente: user?.role === 'paciente',
         role: user?.role || null,
         login,
         register,
         logout,
+        refreshUser,
       }}
     >
       {children}

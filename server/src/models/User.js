@@ -23,10 +23,20 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['admin', 'paciente'],
+      enum: ['admin', 'medico', 'paciente'],
       default: 'paciente',
     },
     phone: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    specialty: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    cro: {
       type: String,
       trim: true,
       default: '',

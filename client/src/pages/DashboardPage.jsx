@@ -4,6 +4,7 @@ import { api } from '../services/api';
 import StatCard from '../components/StatCard';
 import Badge from '../components/Badge';
 import Spinner from '../components/Spinner';
+import AdminReportsPanel from '../components/AdminReportsPanel';
 
 export default function DashboardPage() {
   const [summary, setSummary] = useState(null);
@@ -18,7 +19,7 @@ export default function DashboardPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <Spinner label="Carregando indicadores da clínica..." />;
+  if (loading) return <Spinner label="Carregando relatórios e indicadores da clínica..." />;
 
   if (error) {
     return (
@@ -33,9 +34,11 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-slate-900">Dashboard da Clínica</h1>
+        <h1 className="text-xl font-bold text-slate-900">
+          Relatórios Gerenciais e Dashboard da Clínica
+        </h1>
         <p className="text-sm text-slate-500">
-          Visão gerencial exclusiva para administradores da unidade.
+          Visão financeira, operacional e de produtividade exclusiva para o Administrador da unidade.
         </p>
       </div>
 
@@ -61,14 +64,16 @@ export default function DashboardPage() {
         <StatCard
           title="Receita Prevista"
           value={`R$ ${Number(summary?.estimatedRevenue || 0).toFixed(2)}`}
-          subtitle={`${summary?.totalServices || 0} procedimentos ativos`}
+          subtitle={`Realizada: R$ ${Number(summary?.realizedRevenue || 0).toFixed(2)}`}
           icon={DollarSign}
         />
       </div>
 
+      <AdminReportsPanel summary={summary} />
+
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-          <h2 className="text-sm font-bold text-slate-800">Agenda de Hoje</h2>
+          <h2 className="text-sm font-bold text-slate-800">Agenda Consolidada de Hoje</h2>
           <span className="text-xs text-slate-500">
             {new Date().toLocaleDateString('pt-BR')}
           </span>

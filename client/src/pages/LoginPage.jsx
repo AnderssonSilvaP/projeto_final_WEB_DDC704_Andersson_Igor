@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { MapPin, AlertCircle, ShieldCheck, User, ArrowLeft } from 'lucide-react';
+import { MapPin, AlertCircle, ShieldCheck, Stethoscope, User, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/Button';
 import FormField from '../components/FormField';
@@ -170,17 +170,29 @@ export default function LoginPage() {
             <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 text-center mb-3">
               Acesso rápido de demonstração
             </p>
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <button
                 type="button"
                 disabled={loading}
                 onClick={() => handleDemoLogin('admin@odontocheck.com', 'admin123')}
                 className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 hover:border-brand-600 hover:bg-brand-50/40 text-left transition-colors"
               >
-                <ShieldCheck className="w-4 h-4 text-brand-600 shrink-0" />
+                <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0" />
                 <div>
                   <span className="block text-xs font-semibold text-slate-800">Admin</span>
-                  <span className="block text-[10px] text-slate-500">Gestão completa</span>
+                  <span className="block text-[10px] text-slate-500">Relatórios e gestão</span>
+                </div>
+              </button>
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => handleDemoLogin('medico@odontocheck.com', 'medico123')}
+                className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 hover:border-brand-600 hover:bg-brand-50/40 text-left transition-colors"
+              >
+                <Stethoscope className="w-4 h-4 text-indigo-600 shrink-0" />
+                <div>
+                  <span className="block text-xs font-semibold text-slate-800">Médico</span>
+                  <span className="block text-[10px] text-slate-500">Agenda e prontuário</span>
                 </div>
               </button>
               <button
@@ -192,7 +204,7 @@ export default function LoginPage() {
                 <User className="w-4 h-4 text-brand-600 shrink-0" />
                 <div>
                   <span className="block text-xs font-semibold text-slate-800">Paciente</span>
-                  <span className="block text-[10px] text-slate-500">Acesso comum</span>
+                  <span className="block text-[10px] text-slate-500">Consultas próprias</span>
                 </div>
               </button>
             </div>

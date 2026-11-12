@@ -1,10 +1,10 @@
 const User = require('../models/User');
-const Patient = require('../models/Patient');
 const { signToken } = require('../config/jwt');
+const { ensurePatientForUser } = require('./shared');
 
 async function register(req, res, next) {
   try {
-    const { name, email, password, phone, cpf, birthDate } = req.body;
+    const { name, email, password, phone, cpf, birthDate, healthInsurance } = req.body;
     const normalizedEmail = typeof email === 'string' ? email.toLowerCase().trim() : '';
 
     if (normalizedEmail && (await User.findOne({ email: normalizedEmail }))) {
@@ -19,24 +19,13 @@ async function register(req, res, next) {
       role: 'paciente',
     });
 
-    if (name && (cpf || phone)) {
-      const existingPatient = await Patient.findOne({
-        $or: [
-          ...(cpf ? [{ cpf: String(cpf).trim() }] : []),
-          ...(normalizedEmail ? [{ email: normalizedEmail }] : []),
-        ],
-      });
-      if (!existingPatient) {
-        await Patient.create({
-          name: String(name).trim(),
-          cpf: cpf ? String(cpf).trim() : `000.${Date.now().toString().slice(-6)}-00`,
-          phone: phone ? String(phone).trim() : '(95) 99100-0000',
-          email: normalizedEmail,
-          birthDate: birthDate ? new Date(birthDate) : new Date('1995-01-01'),
-          healthInsurance: 'Particular',
-        });
-      }
-    }
+    await ensurePatientForUser(user, {
+      name,
+      cpf,
+      phone,
+      birthDate,
+      healthInsurance,
+    });
 
     res.status(201).json({ success: true, user, token: signToken(user._id) });
   } catch (err) {
@@ -56,6 +45,10 @@ async function login(req, res, next) {
       return res.status(401).json({ success: false, message: 'E-mail ou senha incorretos.' });
     }
 
+    if (user.role === 'paciente') {
+      await ensurePatientForUser(user);
+    }
+
     res.json({ success: true, user, token: signToken(user._id) });
   } catch (err) {
     next(err);
@@ -66,4 +59,15 @@ function getMe(req, res) {
   res.json({ success: true, user: req.user });
 }
 
-module.exports = { register, login, getMe };
+async function getDentists(req, res, next) {
+  try {
+    const dentists = await User.find({ role: 'medico' })
+      .select('name email phone specialty cro')
+      .sort({ name: 1 });
+    res.json({ success: true, dentists });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { register, login, getMe, getDentists };

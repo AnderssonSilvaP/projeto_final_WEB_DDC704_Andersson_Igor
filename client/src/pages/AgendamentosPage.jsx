@@ -1,9 +1,23 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Plus, Calendar, Clock, Pencil, Trash2 } from 'lucide-react';
+import {
+  Plus,
+  Calendar,
+  Clock,
+  Pencil,
+  Trash2,
+  ClipboardCheck,
+  AlertTriangle,
+  XCircle,
+  CheckCircle2,
+  CalendarCheck,
+} from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import BookingSteps, { DENTISTS, TIME_SLOTS } from '../components/BookingSteps';
+import ClinicalAttendanceModal from '../components/ClinicalAttendanceModal';
+import PatientClinicalCard from '../components/PatientClinicalCard';
+import StatCard from '../components/StatCard';
 import Button from '../components/Button';
 import Badge from '../components/Badge';
 import FormField from '../components/FormField';
@@ -11,7 +25,7 @@ import Modal from '../components/Modal';
 import Spinner from '../components/Spinner';
 
 export default function AgendamentosPage() {
-  const { isAdmin } = useAuth();
+  const { user, isAdmin, isMedico, isPaciente } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const preselectedService = searchParams.get('service') || '';
 
@@ -24,7 +38,9 @@ export default function AgendamentosPage() {
   const [showWizard, setShowWizard] = useState(Boolean(preselectedService));
   const [dateFilter, setDateFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
+  const [dentistFilter, setDentistFilter] = useState('todos');
 
+  const [attendingItem, setAttendingItem] = useState(null);
   const [editing, setEditing] = useState(null);
   const [editForm, setEditForm] = useState({
     patient: '',
@@ -44,6 +60,7 @@ export default function AgendamentosPage() {
       const params = new URLSearchParams();
       if (dateFilter) params.set('date', dateFilter);
       if (statusFilter !== 'todos') params.set('status', statusFilter);
+      if (isAdmin && dentistFilter !== 'todos') params.set('dentistName', dentistFilter);
 
       const [appRes, srvRes, patRes] = await Promise.all([
         api.get(`/appointments?${params.toString()}`),
@@ -59,7 +76,7 @@ export default function AgendamentosPage() {
     } finally {
       setLoading(false);
     }
-  }, [dateFilter, statusFilter]);
+  }, [dateFilter, statusFilter, dentistFilter, isAdmin]);
 
   useEffect(() => {
     loadData();
@@ -84,7 +101,17 @@ export default function AgendamentosPage() {
     setSavingEdit(true);
     setError('');
     try {
-      await api.put(`/appointments/${editing._id}`, editForm);
+      const payload = isPaciente
+        ? {
+            service: editForm.service,
+            dentistName: editForm.dentistName,
+            date: editForm.date,
+            timeSlot: editForm.timeSlot,
+            notes: editForm.notes,
+          }
+        : editForm;
+
+      await api.put(`/appointments/${editing._id}`, payload);
       setEditing(null);
       await loadData();
     } catch (err) {
@@ -103,6 +130,11 @@ export default function AgendamentosPage() {
     }
   };
 
+  const handlePatientCancel = async (id) => {
+    if (!window.confirm('Deseja realmente cancelar a sua consulta?')) return;
+    await handleStatusChange(id, 'cancelado');
+  };
+
   const handleDelete = async (id) => {
     if (!window.confirm('Deseja realmente excluir este agendamento?')) return;
     try {
@@ -115,13 +147,28 @@ export default function AgendamentosPage() {
 
   if (loading) return <Spinner label="Carregando agenda..." />;
 
+  const pendingDoctorCount = appointments.filter(
+    (a) => a.status === 'agendado' || a.status === 'confirmado'
+  ).length;
+  const completedDoctorCount = appointments.filter((a) => a.status === 'concluido').length;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Agenda de Consultas</h1>
+          <h1 className="text-xl font-bold text-slate-900">
+            {isMedico
+              ? `Minha Agenda Clínica • ${user?.name}`
+              : isPaciente
+                ? 'Minhas Consultas'
+                : 'Gestão de Agendamentos'}
+          </h1>
           <p className="text-sm text-slate-500">
-            Marque novas consultas com verificação automática de horários disponíveis.
+            {isMedico
+              ? `Pacientes agendados exclusivamente com você (${user?.specialty || 'Cirurgião-Dentista'}).`
+              : isPaciente
+                ? 'Agende consultas para você, acompanhe seus horários e veja recomendações médicas.'
+                : 'Controle completo da agenda de todos os profissionais da clínica.'}
           </p>
         </div>
         <Button
@@ -131,9 +178,36 @@ export default function AgendamentosPage() {
           }}
         >
           <Plus className="w-4 h-4" />
-          {showWizard ? 'Ocultar Agendamento' : 'Agendar Consulta'}
+          {showWizard
+            ? 'Ocultar Agendamento'
+            : isMedico
+              ? 'Agendar Retorno'
+              : 'Agendar Consulta'}
         </Button>
       </div>
+
+      {isMedico && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <StatCard
+            title="Na Minha Agenda"
+            value={appointments.length}
+            subtitle="Consultas atribuídas a você"
+            icon={CalendarCheck}
+          />
+          <StatCard
+            title="Aguardando Atendimento"
+            value={pendingDoctorCount}
+            subtitle="Agendados ou confirmados"
+            icon={Clock}
+          />
+          <StatCard
+            title="Pacientes Atendidos"
+            value={completedDoctorCount}
+            subtitle="Com prontuário concluído"
+            icon={CheckCircle2}
+          />
+        </div>
+      )}
 
       {error && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-xs font-medium text-red-700">
@@ -161,10 +235,28 @@ export default function AgendamentosPage() {
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <h2 className="text-sm font-bold text-slate-800">
-            Consultas Registradas ({appointments.length})
+            {isPaciente
+              ? `Meus Agendamentos (${appointments.length})`
+              : isMedico
+                ? `Fila de Atendimento (${appointments.length})`
+                : `Consultas Registradas (${appointments.length})`}
           </h2>
 
           <div className="flex flex-wrap items-center gap-2.5">
+            {isAdmin && (
+              <select
+                value={dentistFilter}
+                onChange={(e) => setDentistFilter(e.target.value)}
+                className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-700 focus:border-brand-600 focus:outline-none bg-white"
+              >
+                <option value="todos">Todos os dentistas</option>
+                {DENTISTS.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+            )}
             <input
               type="date"
               value={dateFilter}
@@ -212,97 +304,156 @@ export default function AgendamentosPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm">
-                {appointments.map((item) => (
-                  <tr key={item._id} className="hover:bg-slate-50/60 transition-colors">
-                    <td className="py-3.5 px-6 whitespace-nowrap">
-                      <div className="font-semibold text-slate-900 flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5 text-brand-600" />
-                        {item.date.split('-').reverse().join('/')}
-                      </div>
-                      <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-                        <Clock className="w-3 h-3" /> {item.timeSlot}
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <div className="font-medium text-slate-900">
-                        {item.patient?.name || 'Paciente removido'}
-                      </div>
-                      <div className="text-xs text-slate-500">
-                        {item.patient?.phone} • {item.patient?.healthInsurance}
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <div className="font-medium text-slate-800">
-                        {item.service?.name || 'Procedimento'}
-                      </div>
-                      <div className="text-xs text-slate-500">
-                        R$ {Number(item.service?.price || 0).toFixed(2)}
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-4 text-slate-700 text-xs font-medium">
-                      {item.dentistName}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <select
-                        value={item.status}
-                        onChange={(e) => handleStatusChange(item._id, e.target.value)}
-                        className="text-xs font-medium rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-slate-700 focus:border-brand-600 focus:outline-none"
-                      >
-                        <option value="agendado">Agendado</option>
-                        <option value="confirmado">Confirmado</option>
-                        <option value="concluido">Concluído</option>
-                        <option value="cancelado">Cancelado</option>
-                      </select>
-                    </td>
-                    <td className="py-3.5 px-6 text-right whitespace-nowrap">
-                      <div className="inline-flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => openEditModal(item)}
-                          title="Editar agendamento"
-                          className="p-1.5 rounded-lg text-slate-500 hover:text-brand-600 hover:bg-brand-50 transition-colors"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        {isAdmin && (
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(item._id)}
-                            title="Excluir agendamento (Admin)"
-                            className="p-1.5 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                {appointments.map((item) => {
+                  const canPatientModify =
+                    isPaciente && item.status !== 'concluido' && item.status !== 'cancelado';
+
+                  return (
+                    <tr key={item._id} className="hover:bg-slate-50/60 transition-colors">
+                      <td className="py-3.5 px-6 whitespace-nowrap">
+                        <div className="font-semibold text-slate-900 flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-brand-600" />
+                          {item.date.split('-').reverse().join('/')}
+                        </div>
+                        <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                          <Clock className="w-3 h-3" /> {item.timeSlot}
+                        </div>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <div className="font-medium text-slate-900">
+                          {item.patient?.name || 'Paciente removido'}
+                        </div>
+                        <div className="text-xs text-slate-500">
+                          {item.patient?.phone} • {item.patient?.healthInsurance}
+                        </div>
+                        {(isMedico || isAdmin) &&
+                          item.patient?.allergies &&
+                          item.patient.allergies !== 'Nenhuma alergia relatada' && (
+                            <span className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
+                              <AlertTriangle className="w-3 h-3" /> Alergia: {item.patient.allergies}
+                            </span>
+                          )}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <div className="font-medium text-slate-800">
+                          {item.service?.name || 'Procedimento'}
+                        </div>
+                        <div className="text-xs text-slate-500">
+                          R$ {Number(item.service?.price || 0).toFixed(2)}
+                        </div>
+                        {item.notes && (
+                          <div className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">
+                            Obs: {item.notes}
+                          </div>
                         )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="py-3.5 px-4 text-slate-700 text-xs font-medium">
+                        {item.dentistName}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        {isPaciente ? (
+                          <Badge variant={item.status} />
+                        ) : (
+                          <select
+                            value={item.status}
+                            onChange={(e) => handleStatusChange(item._id, e.target.value)}
+                            className="text-xs font-medium rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-slate-700 focus:border-brand-600 focus:outline-none"
+                          >
+                            <option value="agendado">Agendado</option>
+                            <option value="confirmado">Confirmado</option>
+                            <option value="concluido">Concluído</option>
+                            <option value="cancelado">Cancelado</option>
+                          </select>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-6 text-right whitespace-nowrap">
+                        <div className="inline-flex items-center gap-1.5">
+                          {(isMedico || isAdmin) && (
+                            <button
+                              type="button"
+                              onClick={() => setAttendingItem(item)}
+                              title="Registrar atendimento e evolução clínica"
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-brand-50 text-brand-700 hover:bg-brand-100 transition-colors"
+                            >
+                              <ClipboardCheck className="w-3.5 h-3.5" />
+                              <span>{item.clinicalNotes ? 'Prontuário' : 'Atender'}</span>
+                            </button>
+                          )}
+
+                          {(isAdmin || isMedico || canPatientModify) && (
+                            <button
+                              type="button"
+                              onClick={() => openEditModal(item)}
+                              title={isPaciente ? 'Remarcar consulta' : 'Editar agendamento'}
+                              className="p-1.5 rounded-lg text-slate-500 hover:text-brand-600 hover:bg-brand-50 transition-colors"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                          )}
+
+                          {canPatientModify && (
+                            <button
+                              type="button"
+                              onClick={() => handlePatientCancel(item._id)}
+                              title="Cancelar minha consulta"
+                              className="p-1.5 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                            >
+                              <XCircle className="w-4 h-4" />
+                            </button>
+                          )}
+
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(item._id)}
+                              title="Excluir agendamento (Admin)"
+                              className="p-1.5 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
       </div>
 
+      {isPaciente && <PatientClinicalCard appointments={appointments} />}
+
+      <ClinicalAttendanceModal
+        appointment={attendingItem}
+        isOpen={Boolean(attendingItem)}
+        onClose={() => setAttendingItem(null)}
+        onSuccess={loadData}
+      />
+
       <Modal
         isOpen={Boolean(editing)}
         onClose={() => setEditing(null)}
-        title="Editar Agendamento"
+        title={isPaciente ? 'Remarcar Minha Consulta' : 'Editar Agendamento'}
       >
         <form onSubmit={handleSaveEdit} className="space-y-4">
-          <FormField
-            label="Paciente"
-            as="select"
-            value={editForm.patient}
-            onChange={(e) => setEditForm({ ...editForm, patient: e.target.value })}
-            required
-          >
-            {patients.map((p) => (
-              <option key={p._id} value={p._id}>
-                {p.name} ({p.cpf})
-              </option>
-            ))}
-          </FormField>
+          {!isPaciente && (
+            <FormField
+              label="Paciente"
+              as="select"
+              value={editForm.patient}
+              disabled={isMedico}
+              onChange={(e) => setEditForm({ ...editForm, patient: e.target.value })}
+              required
+            >
+              {patients.map((p) => (
+                <option key={p._id} value={p._id}>
+                  {p.name} ({p.cpf})
+                </option>
+              ))}
+            </FormField>
+          )}
 
           <FormField
             label="Procedimento"
@@ -322,6 +473,7 @@ export default function AgendamentosPage() {
             label="Profissional"
             as="select"
             value={editForm.dentistName}
+            disabled={isMedico}
             onChange={(e) => setEditForm({ ...editForm, dentistName: e.target.value })}
           >
             {DENTISTS.map((d) => (
@@ -353,20 +505,22 @@ export default function AgendamentosPage() {
             </FormField>
           </div>
 
-          <FormField
-            label="Status"
-            as="select"
-            value={editForm.status}
-            onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
-          >
-            <option value="agendado">Agendado</option>
-            <option value="confirmado">Confirmado</option>
-            <option value="concluido">Concluído</option>
-            <option value="cancelado">Cancelado</option>
-          </FormField>
+          {!isPaciente && (
+            <FormField
+              label="Status"
+              as="select"
+              value={editForm.status}
+              onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+            >
+              <option value="agendado">Agendado</option>
+              <option value="confirmado">Confirmado</option>
+              <option value="concluido">Concluído</option>
+              <option value="cancelado">Cancelado</option>
+            </FormField>
+          )}
 
           <FormField
-            label="Observações"
+            label="Observações / Queixa"
             as="textarea"
             rows={2}
             value={editForm.notes}

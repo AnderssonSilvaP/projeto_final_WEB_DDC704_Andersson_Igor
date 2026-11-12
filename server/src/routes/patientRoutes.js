@@ -1,7 +1,10 @@
 const router = require('express').Router();
 const {
+  getMyPatientProfile,
+  updateMyPatientProfile,
   getPatients,
   getPatientById,
+  getPatientHistory,
   createPatient,
   updatePatient,
   deletePatient,
@@ -10,13 +13,19 @@ const { protect, authorize } = require('../middleware/authMiddleware');
 
 router.use(protect);
 
+router.route('/me')
+  .get(getMyPatientProfile)
+  .put(updateMyPatientProfile);
+
 router.route('/')
   .get(getPatients)
-  .post(createPatient);
+  .post(authorize('admin'), createPatient);
+
+router.get('/:id/history', authorize('admin', 'medico'), getPatientHistory);
 
 router.route('/:id')
   .get(getPatientById)
-  .put(updatePatient)
+  .put(authorize('admin', 'medico'), updatePatient)
   .delete(authorize('admin'), deletePatient);
 
 module.exports = router;

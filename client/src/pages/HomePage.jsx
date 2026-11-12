@@ -7,16 +7,18 @@ import {
   Phone,
   Stethoscope,
   Users,
+  UserCheck,
   LayoutDashboard,
   ArrowRight,
   CheckCircle2,
+  ClipboardCheck,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/Button';
 
 export default function HomePage() {
-  const { isAuthenticated, isAdmin, user } = useAuth();
+  const { isAuthenticated, isAdmin, isMedico, isPaciente, user } = useAuth();
   const navigate = useNavigate();
   const [services, setServices] = useState([]);
 
@@ -97,23 +99,47 @@ export default function HomePage() {
             className="bg-white rounded-xl border border-slate-200 p-5 text-left hover:border-brand-600 transition-colors shadow-sm"
           >
             <Calendar className="w-5 h-5 text-brand-600 mb-2" />
-            <h3 className="text-sm font-bold text-slate-900">Agenda de Consultas</h3>
+            <h3 className="text-sm font-bold text-slate-900">
+              {isMedico ? 'Minha Agenda Clínica' : isPaciente ? 'Minhas Consultas' : 'Agenda de Consultas'}
+            </h3>
             <p className="text-xs text-slate-500 mt-1">
-              Marcar horários e acompanhar status de consultas.
+              {isMedico
+                ? 'Atender pacientes atribuídos a você e registrar evoluções.'
+                : isPaciente
+                  ? 'Agendar consulta para você e acompanhar seus horários.'
+                  : 'Gerenciar horários e status de todas as consultas.'}
             </p>
           </button>
 
-          <button
-            type="button"
-            onClick={() => navigate('/pacientes')}
-            className="bg-white rounded-xl border border-slate-200 p-5 text-left hover:border-brand-600 transition-colors shadow-sm"
-          >
-            <Users className="w-5 h-5 text-brand-600 mb-2" />
-            <h3 className="text-sm font-bold text-slate-900">Pacientes</h3>
-            <p className="text-xs text-slate-500 mt-1">
-              Consultar e atualizar fichas cadastrais e convênios.
-            </p>
-          </button>
+          {isPaciente ? (
+            <button
+              type="button"
+              onClick={() => navigate('/minha-ficha')}
+              className="bg-white rounded-xl border border-slate-200 p-5 text-left hover:border-brand-600 transition-colors shadow-sm"
+            >
+              <UserCheck className="w-5 h-5 text-brand-600 mb-2" />
+              <h3 className="text-sm font-bold text-slate-900">Minha Ficha Odontológica</h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Atualizar seus dados pessoais, alergias e ver recomendações médicas.
+              </p>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => navigate('/pacientes')}
+              className="bg-white rounded-xl border border-slate-200 p-5 text-left hover:border-brand-600 transition-colors shadow-sm"
+            >
+              <Users className="w-5 h-5 text-brand-600 mb-2" />
+              <h3 className="text-sm font-bold text-slate-900">
+                {isMedico ? 'Prontuários de Pacientes' : 'Gestão de Pacientes'}
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">
+                {isMedico
+                  ? 'Consultar histórico clínico, anamnese e alergias dos seus pacientes.'
+                  : 'Cadastrar e atualizar fichas cadastrais e convênios.'}
+              </p>
+            </button>
+          )}
 
           <button
             type="button"
@@ -134,11 +160,21 @@ export default function HomePage() {
               className="bg-white rounded-xl border border-slate-200 p-5 text-left hover:border-brand-600 transition-colors shadow-sm"
             >
               <LayoutDashboard className="w-5 h-5 text-brand-600 mb-2" />
-              <h3 className="text-sm font-bold text-slate-900">Dashboard Admin</h3>
+              <h3 className="text-sm font-bold text-slate-900">Relatórios & Dashboard</h3>
               <p className="text-xs text-slate-500 mt-1">
-                Indicadores operacionais e resumo diário da clínica.
+                Relatórios financeiros por dentista, convênio e indicadores da clínica.
               </p>
             </button>
+          ) : isMedico ? (
+            <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+              <ClipboardCheck className="w-5 h-5 text-brand-600 mb-2" />
+              <h3 className="text-sm font-bold text-slate-900">
+                {user?.specialty || 'Cirurgião-Dentista'}
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">
+                {user?.cro ? `${user.cro} • ` : ''}Acesso dedicado às utilidades clínicas e prontuários.
+              </p>
+            </div>
           ) : (
             <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
               <CheckCircle2 className="w-5 h-5 text-brand-600 mb-2" />

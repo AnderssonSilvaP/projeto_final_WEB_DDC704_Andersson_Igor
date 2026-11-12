@@ -1,3 +1,5 @@
+const Patient = require('../models/Patient');
+
 const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const pick = (source, fields) => {
@@ -16,4 +18,38 @@ const checkId = (res, id, message = 'Registro não encontrado.') => {
   return false;
 };
 
-module.exports = { escapeRegex, pick, isValidId, checkId };
+async function ensurePatientForUser(user, extra = {}) {
+  if (!user) return null;
+  const email = user.email ? String(user.email).toLowerCase().trim() : '';
+
+  let patient = await Patient.findOne({
+    $or: [
+      { user: user._id },
+      ...(email ? [{ email }] : []),
+      ...(extra.cpf ? [{ cpf: String(extra.cpf).trim() }] : []),
+    ],
+  });
+
+  if (patient) {
+    if (!patient.user) {
+      patient.user = user._id;
+      await patient.save();
+    }
+    return patient;
+  }
+
+  patient = await Patient.create({
+    user: user._id,
+    name: String(extra.name || user.name || 'Paciente').trim(),
+    cpf: extra.cpf ? String(extra.cpf).trim() : `000.${Date.now().toString().slice(-6)}-00`,
+    phone: extra.phone || user.phone || '(95) 99100-0000',
+    email,
+    birthDate: extra.birthDate ? new Date(extra.birthDate) : new Date('1995-01-01'),
+    healthInsurance: extra.healthInsurance || 'Particular',
+    allergies: extra.allergies || '',
+  });
+
+  return patient;
+}
+
+module.exports = { escapeRegex, pick, isValidId, checkId, ensurePatientForUser };

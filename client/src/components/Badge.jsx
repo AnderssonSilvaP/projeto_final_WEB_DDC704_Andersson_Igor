@@ -6,6 +6,7 @@ const STYLES = {
   concluido: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   cancelado: 'bg-rose-50 text-rose-700 border-rose-200',
   admin: 'bg-amber-50 text-amber-700 border-amber-200',
+  medico: 'bg-indigo-50 text-indigo-700 border-indigo-200',
   paciente: 'bg-slate-100 text-slate-700 border-slate-200',
   default: 'bg-slate-100 text-slate-700 border-slate-200',
 };
@@ -15,7 +16,8 @@ const LABELS = {
   confirmado: 'Confirmado',
   concluido: 'Concluído',
   cancelado: 'Cancelado',
-  admin: 'Admin',
+  admin: 'Administrador',
+  medico: 'Cirurgião-Dentista',
   paciente: 'Paciente',
 };
 
