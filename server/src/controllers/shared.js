@@ -43,9 +43,16 @@ async function ensurePatientForUser(user, extra = {}) {
     name: String(extra.name || user.name || 'Paciente').trim(),
     cpf: extra.cpf ? String(extra.cpf).trim() : `000.${Date.now().toString().slice(-6)}-00`,
     phone: extra.phone || user.phone || '(95) 99100-0000',
+    emergencyContact: extra.emergencyContact ? String(extra.emergencyContact).trim() : '',
     email,
     birthDate: extra.birthDate ? new Date(extra.birthDate) : new Date('1995-01-01'),
+    gender: extra.gender || 'Não informado',
+    cep: extra.cep ? String(extra.cep).trim() : '',
+    address: extra.address ? String(extra.address).trim() : '',
+    city: extra.city ? String(extra.city).trim() : 'Boa Vista',
+    state: extra.state ? String(extra.state).trim().toUpperCase() : 'RR',
     healthInsurance: extra.healthInsurance || 'Particular',
+    insuranceNumber: extra.insuranceNumber ? String(extra.insuranceNumber).trim() : '',
     allergies: extra.allergies || '',
   });
 

@@ -5,6 +5,7 @@ const baseInputClasses =
 
 export default function FormField({
   label,
+  hint,
   as = 'input',
   children,
   className = '',
@@ -13,9 +14,10 @@ export default function FormField({
   const Component = as;
   return (
     <label className={`block ${className}`}>
-      {label && (
-        <span className="block text-xs font-semibold text-slate-700 mb-1.5">
-          {label}
+      {(label || hint) && (
+        <span className="flex items-center justify-between text-xs font-semibold text-slate-700 mb-1.5">
+          <span>{label}</span>
+          {hint && <span className="text-[11px] font-normal text-slate-400">{hint}</span>}
         </span>
       )}
       <Component className={baseInputClasses} {...props}>

@@ -3,8 +3,38 @@ const Appointment = require('../models/Appointment');
 const User = require('../models/User');
 const { escapeRegex, pick, checkId, ensurePatientForUser } = require('./shared');
 
-const FIELDS = ['name', 'cpf', 'phone', 'email', 'birthDate', 'healthInsurance', 'allergies', 'notes'];
-const SELF_FIELDS = ['name', 'cpf', 'phone', 'birthDate', 'healthInsurance', 'allergies'];
+const FIELDS = [
+  'name',
+  'cpf',
+  'phone',
+  'emergencyContact',
+  'email',
+  'birthDate',
+  'gender',
+  'cep',
+  'address',
+  'city',
+  'state',
+  'healthInsurance',
+  'insuranceNumber',
+  'allergies',
+  'notes',
+];
+const SELF_FIELDS = [
+  'name',
+  'cpf',
+  'phone',
+  'emergencyContact',
+  'birthDate',
+  'gender',
+  'cep',
+  'address',
+  'city',
+  'state',
+  'healthInsurance',
+  'insuranceNumber',
+  'allergies',
+];
 
 async function getMyPatientProfile(req, res, next) {
   try {

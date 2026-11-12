@@ -8,28 +8,18 @@ import {
   Mail,
   FileText,
   AlertTriangle,
+  MapPin,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import PatientHistoryModal from '../components/PatientHistoryModal';
+import PatientProfileFields, { INITIAL_PATIENT_FORM } from '../components/PatientProfileFields';
 import Button from '../components/Button';
 import FormField from '../components/FormField';
 import Modal from '../components/Modal';
 import Badge from '../components/Badge';
 import Spinner from '../components/Spinner';
-
-const EMPTY_FORM = {
-  name: '',
-  cpf: '',
-  phone: '',
-  email: '',
-  birthDate: '',
-  healthInsurance: 'Particular',
-  allergies: '',
-  notes: '',
-};
-
-const INSURANCES = ['Particular', 'Uniodonto', 'Bradesco Dental', 'Amil Dental'];
+import { formatEmail, formatTextLimit, INSURANCES } from '../utils/masks';
 
 export default function PacientesPage() {
   const { isAdmin, isMedico } = useAuth();
@@ -43,7 +33,7 @@ export default function PacientesPage() {
   const [historyPatientId, setHistoryPatientId] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState(EMPTY_FORM);
+  const [form, setForm] = useState(INITIAL_PATIENT_FORM);
   const [saving, setSaving] = useState(false);
 
   const loadPatients = useCallback(async () => {
@@ -69,7 +59,7 @@ export default function PacientesPage() {
 
   const openCreate = () => {
     setEditing(null);
-    setForm(EMPTY_FORM);
+    setForm(INITIAL_PATIENT_FORM);
     setModalOpen(true);
   };
 
@@ -78,11 +68,18 @@ export default function PacientesPage() {
     setForm({
       name: patient.name || '',
       cpf: patient.cpf || '',
-      phone: patient.phone || '',
-      email: patient.email || '',
       birthDate: patient.birthDate ? String(patient.birthDate).slice(0, 10) : '',
+      gender: patient.gender || 'Não informado',
+      phone: patient.phone || '',
+      emergencyContact: patient.emergencyContact || '',
+      cep: patient.cep || '',
+      address: patient.address || '',
+      city: patient.city || 'Boa Vista',
+      state: patient.state || 'RR',
       healthInsurance: patient.healthInsurance || 'Particular',
+      insuranceNumber: patient.insuranceNumber || '',
       allergies: patient.allergies || '',
+      email: patient.email || '',
       notes: patient.notes || '',
     });
     setModalOpen(true);
@@ -205,7 +202,7 @@ export default function PacientesPage() {
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                   <th className="py-3 px-6">Nome / CPF</th>
-                  <th className="py-3 px-4">Contato</th>
+                  <th className="py-3 px-4">Contato / Endereço</th>
                   <th className="py-3 px-4">Anamnese / Alergias</th>
                   <th className="py-3 px-4">Convênio</th>
                   <th className="py-3 px-6 text-right">Ações</th>
@@ -232,6 +229,11 @@ export default function PacientesPage() {
                           <Mail className="w-3.5 h-3.5" /> {patient.email}
                         </div>
                       )}
+                      {patient.city && (
+                        <div className="flex items-center gap-1.5 text-slate-400">
+                          <MapPin className="w-3.5 h-3.5" /> {patient.city}/{patient.state || 'RR'}
+                        </div>
+                      )}
                     </td>
                     <td className="py-3.5 px-4 text-xs">
                       {patient.allergies && patient.allergies !== 'Nenhuma alergia relatada' ? (
@@ -247,6 +249,11 @@ export default function PacientesPage() {
                     </td>
                     <td className="py-3.5 px-4">
                       <Badge>{patient.healthInsurance}</Badge>
+                      {patient.insuranceNumber && (
+                        <span className="block text-[11px] text-slate-400 mt-0.5">
+                          Nº {patient.insuranceNumber}
+                        </span>
+                      )}
                     </td>
                     <td className="py-3.5 px-6 text-right whitespace-nowrap">
                       <div className="inline-flex items-center gap-1.5">
@@ -300,70 +307,28 @@ export default function PacientesPage() {
       <Modal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        title={editing ? 'Editar Paciente' : 'Novo Paciente'}
+        title={editing ? 'Editar Ficha Completa do Paciente' : 'Novo Cadastro de Paciente'}
       >
         <form onSubmit={handleSubmit} className="space-y-4">
-          <FormField
-            label="Nome completo"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            required
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <FormField
-              label="CPF"
-              placeholder="000.000.000-00"
-              value={form.cpf}
-              onChange={(e) => setForm({ ...form, cpf: e.target.value })}
-              required
-            />
-            <FormField
-              label="Data de nascimento"
-              type="date"
-              value={form.birthDate}
-              onChange={(e) => setForm({ ...form, birthDate: e.target.value })}
-              required
-            />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <FormField
-              label="Telefone / WhatsApp"
-              placeholder="(95) 99100-0000"
-              value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              required
-            />
-            <FormField
-              label="Convênio"
-              as="select"
-              value={form.healthInsurance}
-              onChange={(e) => setForm({ ...form, healthInsurance: e.target.value })}
-            >
-              {INSURANCES.map((ins) => (
-                <option key={ins} value={ins}>
-                  {ins}
-                </option>
-              ))}
-            </FormField>
-          </div>
+          <PatientProfileFields form={form} onChange={setForm} compact />
+
           <FormField
             label="E-mail"
+            hint={`${(form.email || '').length}/80`}
             type="email"
+            maxLength={80}
+            placeholder="paciente@email.com"
             value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-          />
-          <FormField
-            label="Alergias / Restrições medicamentosas"
-            placeholder="Ex: Dipirona, Penicilina, Látex..."
-            value={form.allergies}
-            onChange={(e) => setForm({ ...form, allergies: e.target.value })}
+            onChange={(e) => setForm({ ...form, email: formatEmail(e.target.value) })}
           />
           <FormField
             label="Observações clínicas"
+            hint={`${(form.notes || '').length}/250`}
             as="textarea"
             rows={2}
+            maxLength={250}
             value={form.notes}
-            onChange={(e) => setForm({ ...form, notes: e.target.value })}
+            onChange={(e) => setForm({ ...form, notes: formatTextLimit(e.target.value, 250) })}
           />
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="secondary" onClick={() => setModalOpen(false)}>

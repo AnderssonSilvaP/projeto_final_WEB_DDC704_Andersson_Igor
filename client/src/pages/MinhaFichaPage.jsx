@@ -5,7 +5,6 @@ import {
   CheckCircle2,
   ShieldCheck,
   Save,
-  AlertTriangle,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -14,21 +13,12 @@ import FormField from '../components/FormField';
 import Button from '../components/Button';
 import Spinner from '../components/Spinner';
 import PatientClinicalCard from '../components/PatientClinicalCard';
-
-const INSURANCES = ['Particular', 'Uniodonto', 'Bradesco Dental', 'Amil Dental'];
+import PatientProfileFields, { INITIAL_PATIENT_FORM } from '../components/PatientProfileFields';
 
 export default function MinhaFichaPage() {
   const { refreshUser } = useAuth();
   const [appointments, setAppointments] = useState([]);
-  const [form, setForm] = useState({
-    name: '',
-    cpf: '',
-    phone: '',
-    email: '',
-    birthDate: '',
-    healthInsurance: 'Particular',
-    allergies: '',
-  });
+  const [form, setForm] = useState(INITIAL_PATIENT_FORM);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
@@ -43,11 +33,18 @@ export default function MinhaFichaPage() {
       setForm({
         name: p.name || '',
         cpf: p.cpf || '',
-        phone: p.phone || '',
-        email: p.email || '',
         birthDate: p.birthDate ? String(p.birthDate).slice(0, 10) : '',
+        gender: p.gender || 'Não informado',
+        phone: p.phone || '',
+        emergencyContact: p.emergencyContact || '',
+        cep: p.cep || '',
+        address: p.address || '',
+        city: p.city || 'Boa Vista',
+        state: p.state || 'RR',
         healthInsurance: p.healthInsurance || 'Particular',
+        insuranceNumber: p.insuranceNumber || '',
         allergies: p.allergies || '',
+        email: p.email || '',
       });
       setAppointments(res.appointments || []);
     } catch (err) {
@@ -63,16 +60,33 @@ export default function MinhaFichaPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSaving(true);
     setError('');
     setSuccessMsg('');
+
+    if (form.cpf.length < 14) {
+      setError('Informe o CPF completo no formato 000.000.000-00.');
+      return;
+    }
+    if (form.phone.length < 14) {
+      setError('Informe o telefone completo com DDD.');
+      return;
+    }
+
+    setSaving(true);
     try {
       await api.put('/patients/me', {
         name: form.name,
         cpf: form.cpf,
-        phone: form.phone,
         birthDate: form.birthDate,
+        gender: form.gender,
+        phone: form.phone,
+        emergencyContact: form.emergencyContact,
+        cep: form.cep,
+        address: form.address,
+        city: form.city,
+        state: form.state,
         healthInsurance: form.healthInsurance,
+        insuranceNumber: form.insuranceNumber,
         allergies: form.allergies,
       });
       await refreshUser();
@@ -94,7 +108,7 @@ export default function MinhaFichaPage() {
       <div>
         <h1 className="text-xl font-bold text-slate-900">Minha Ficha Odontológica</h1>
         <p className="text-sm text-slate-500">
-          Gerencie seus dados pessoais, convênio, alergias e acompanhe recomendações dos seus dentistas.
+          Gerencie seus dados pessoais, endereço, convênio, alergias e acompanhe recomendações dos seus dentistas.
         </p>
       </div>
 
@@ -114,7 +128,7 @@ export default function MinhaFichaPage() {
         <StatCard
           title="Convênio Atual"
           value={form.healthInsurance}
-          subtitle="Cobertura cadastrada"
+          subtitle={form.insuranceNumber ? `Carteira: ${form.insuranceNumber}` : 'Cobertura cadastrada'}
           icon={ShieldCheck}
         />
       </div>
@@ -144,74 +158,15 @@ export default function MinhaFichaPage() {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <FormField
-              label="Nome completo"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              required
-            />
-            <FormField
-              label="E-mail da conta"
-              type="email"
-              value={form.email}
-              disabled
-            />
-          </div>
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          <FormField
+            label="E-mail vinculado à conta"
+            type="email"
+            value={form.email}
+            disabled
+          />
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <FormField
-              label="CPF"
-              placeholder="000.000.000-00"
-              value={form.cpf}
-              onChange={(e) => setForm({ ...form, cpf: e.target.value })}
-              required
-            />
-            <FormField
-              label="Telefone / WhatsApp"
-              placeholder="(95) 99100-0000"
-              value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              required
-            />
-            <FormField
-              label="Data de nascimento"
-              type="date"
-              value={form.birthDate}
-              onChange={(e) => setForm({ ...form, birthDate: e.target.value })}
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <FormField
-              label="Convênio Odontológico"
-              as="select"
-              value={form.healthInsurance}
-              onChange={(e) => setForm({ ...form, healthInsurance: e.target.value })}
-            >
-              {INSURANCES.map((ins) => (
-                <option key={ins} value={ins}>
-                  {ins}
-                </option>
-              ))}
-            </FormField>
-
-            <label className="block">
-              <span className="text-xs font-semibold text-amber-800 mb-1.5 flex items-center gap-1">
-                <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-                Alergias ou Restrições Medicamentosas
-              </span>
-              <input
-                type="text"
-                placeholder="Ex: Dipirona, Penicilina, Látex ou Nenhuma"
-                value={form.allergies}
-                onChange={(e) => setForm({ ...form, allergies: e.target.value })}
-                className="w-full rounded-lg border border-amber-300 bg-amber-50/30 px-3.5 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-brand-600 focus:outline-none"
-              />
-            </label>
-          </div>
+          <PatientProfileFields form={form} onChange={setForm} />
 
           <div className="flex justify-end pt-2">
             <Button type="submit" loading={saving}>

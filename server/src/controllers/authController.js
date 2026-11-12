@@ -4,7 +4,23 @@ const { ensurePatientForUser } = require('./shared');
 
 async function register(req, res, next) {
   try {
-    const { name, email, password, phone, cpf, birthDate, healthInsurance } = req.body;
+    const {
+      name,
+      email,
+      password,
+      phone,
+      emergencyContact,
+      cpf,
+      birthDate,
+      gender,
+      cep,
+      address,
+      city,
+      state,
+      healthInsurance,
+      insuranceNumber,
+      allergies,
+    } = req.body;
     const normalizedEmail = typeof email === 'string' ? email.toLowerCase().trim() : '';
 
     if (normalizedEmail && (await User.findOne({ email: normalizedEmail }))) {
@@ -23,8 +39,16 @@ async function register(req, res, next) {
       name,
       cpf,
       phone,
+      emergencyContact,
       birthDate,
+      gender,
+      cep,
+      address,
+      city,
+      state,
       healthInsurance,
+      insuranceNumber,
+      allergies,
     });
 
     res.status(201).json({ success: true, user, token: signToken(user._id) });

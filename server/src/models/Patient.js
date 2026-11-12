@@ -33,10 +33,46 @@ const patientSchema = new mongoose.Schema(
       type: Date,
       required: [true, 'Data de nascimento é obrigatória'],
     },
+    gender: {
+      type: String,
+      enum: ['Não informado', 'Masculino', 'Feminino', 'Outro'],
+      default: 'Não informado',
+    },
+    emergencyContact: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    cep: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    address: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    city: {
+      type: String,
+      trim: true,
+      default: 'Boa Vista',
+    },
+    state: {
+      type: String,
+      trim: true,
+      uppercase: true,
+      default: 'RR',
+    },
     healthInsurance: {
       type: String,
       enum: ['Particular', 'Uniodonto', 'Bradesco Dental', 'Amil Dental'],
       default: 'Particular',
+    },
+    insuranceNumber: {
+      type: String,
+      trim: true,
+      default: '',
     },
     allergies: {
       type: String,
