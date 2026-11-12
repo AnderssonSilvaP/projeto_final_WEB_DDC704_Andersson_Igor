@@ -23,13 +23,9 @@ export default function Navbar() {
 
   const links = [
     { to: '/', label: 'Início', icon: Home, end: true },
+    { to: '/agendamentos', label: 'Agendamentos', icon: Calendar },
+    { to: '/pacientes', label: 'Pacientes', icon: Users },
     { to: '/procedimentos', label: 'Procedimentos', icon: Stethoscope },
-    ...(isAuthenticated
-      ? [
-          { to: '/agendamentos', label: 'Agendamentos', icon: Calendar },
-          { to: '/pacientes', label: 'Pacientes', icon: Users },
-        ]
-      : []),
     ...(isAdmin ? [{ to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard }] : []),
   ];
 

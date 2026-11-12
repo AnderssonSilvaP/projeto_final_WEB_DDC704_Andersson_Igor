@@ -7,12 +7,13 @@ const TOKEN_KEY = 'odontocheck_token';
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY));
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => Boolean(localStorage.getItem(TOKEN_KEY)));
 
   const logout = useCallback(() => {
     localStorage.removeItem(TOKEN_KEY);
     setToken(null);
     setUser(null);
+    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -41,8 +42,9 @@ export const AuthProvider = ({ children }) => {
 
   const startSession = (res) => {
     localStorage.setItem(TOKEN_KEY, res.token);
-    setToken(res.token);
     setUser(res.user);
+    setToken(res.token);
+    setLoading(false);
     return res.user;
   };
 

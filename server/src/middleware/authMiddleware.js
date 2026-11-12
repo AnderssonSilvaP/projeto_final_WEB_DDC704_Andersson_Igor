@@ -18,7 +18,7 @@ async function protect(req, res, next) {
   try {
     const user = await User.findById(decoded.id).select('-password');
     if (!user) return fail(res, 401, 'Usuário do token não existe mais.');
-    if (!user.active) return fail(res, 403, 'Conta desativada.');
+    if (user.active === false) return fail(res, 403, 'Conta desativada.');
     req.user = user;
     next();
   } catch (err) {
